@@ -115,6 +115,13 @@ const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'Ju
 /** `MilkBill-October-2026-Asha-Patil`, without extension: safe to use as a file name in any language. */
 export function billFileName(month: IsoMonth, customerName: string): string {
   const [year, mm] = month.split('-')
-  const who = customerName.replace(/[^\p{L}\p{M}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '') || 'Customer'
-  return `MilkBill-${MONTH_NAMES[Number(mm) - 1]}-${year}-${who}`
+  return `MilkBill-${MONTH_NAMES[Number(mm) - 1]}-${year}-${fileSafe(customerName)}`
 }
+
+/** `Receipt-2026-10-24-Asha-Patil`, without extension. */
+export function receiptFileName(paidOn: string, customerName: string): string {
+  return `Receipt-${paidOn}-${fileSafe(customerName)}`
+}
+
+/** Letters and digits of any language joined by single dashes. */
+const fileSafe = (text: string): string => text.replace(/[^\p{L}\p{M}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '') || 'Customer'

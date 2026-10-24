@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dayItems, nudgeQty, notDeliveredItems, parseQty, progressOf, qtyText, stopState } from '../src/screens/today/todayHelpers'
+import { dayItems, nudgeQty, notDeliveredItems, parseQty, progressOf, qtyText, reorderRoute, stopState } from '../src/screens/today/todayHelpers'
 
 describe('today helpers', () => {
   it('counts ticked stops', () => {
@@ -36,5 +36,16 @@ describe('today helpers', () => {
     ])
     expect(dayItems([{ milkTypeId: 1, text: '1.' + '5x' }])).toBeNull()
     expect(notDeliveredItems([{ milkTypeId: 3 }])).toEqual([{ milkTypeId: 3, qtyMl: 0 }])
+  })
+})
+
+describe('reorderRoute', () => {
+  it('moves a stop among those shown and leaves hidden customers in their places', () => {
+    expect(reorderRoute([1, 2, 3, 4, 5], [1, 3, 5], 3, -1)).toEqual({ shown: [3, 1, 5], all: [3, 2, 1, 4, 5] })
+    expect(reorderRoute([1, 2, 3, 4, 5], [1, 3, 5], 3, 1)).toEqual({ shown: [1, 5, 3], all: [1, 2, 5, 4, 3] })
+  })
+  it('changes nothing at either end', () => {
+    expect(reorderRoute([1, 2, 3], [1, 2, 3], 1, -1).all).toEqual([1, 2, 3])
+    expect(reorderRoute([1, 2, 3], [1, 2, 3], 3, 1).all).toEqual([1, 2, 3])
   })
 })

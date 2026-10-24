@@ -111,7 +111,7 @@ const SQL = {
   plans: 'SELECT customer_id AS customerId, milk_type_id AS milkTypeId, qty_ml AS qtyMl, effective_from AS effectiveFrom FROM plan',
   entries: 'SELECT customer_id AS customerId, date, milk_type_id AS milkTypeId, qty_ml AS qtyMl FROM day_entry',
   pauses: 'SELECT id, customer_id AS customerId, from_date AS "from", resume_on AS resumeOn FROM pause ORDER BY from_date',
-  payments: 'SELECT id, customer_id AS customerId, paid_on AS paidOn, amount_paise AS amountPaise, note FROM payment',
+  payments: 'SELECT id, customer_id AS customerId, paid_on AS paidOn, amount_paise AS amountPaise, note, txn_ref AS txnRef, screenshot FROM payment',
   allocations: 'SELECT payment_id AS paymentId, month, amount_paise AS amountPaise FROM payment_month ORDER BY month',
   uses: 'SELECT id, customer_id AS customerId, month, amount_paise AS amountPaise, used_on AS usedOn FROM credit_use',
 }
@@ -125,7 +125,7 @@ async function loadRaw(conn: Conn): Promise<Raw> {
     conn.getAllAsync<CustomerPlan>(SQL.plans),
     conn.getAllAsync<CustomerEntry>(SQL.entries),
     conn.getAllAsync<CustomerPause>(SQL.pauses),
-    conn.getAllAsync<Omit<CustomerPayment, 'allocations' | 'screenshot'>>(SQL.payments),
+    conn.getAllAsync<Omit<CustomerPayment, 'allocations'>>(SQL.payments),
     conn.getAllAsync<Allocation & { paymentId: number }>(SQL.allocations),
     conn.getAllAsync<CustomerCreditUse>(SQL.uses),
   ])
@@ -138,7 +138,6 @@ async function loadRaw(conn: Conn): Promise<Raw> {
     pauses,
     payments: payments.map((p) => ({
       ...p,
-      screenshot: null,
       allocations: allocations.filter((a) => a.paymentId === p.id).map(({ month, amountPaise }) => ({ month, amountPaise })),
     })),
     uses,
@@ -489,13 +488,15 @@ export async function addPayment(
   amountPaise: number,
   note: string,
   allocations: Allocation[],
+  txnRef = '',
+  screenshot: string | null = null,
 ): Promise<number> {
   checkPayment(amountPaise, allocations)
   const conn = await db()
   let id = 0
   await conn.withExclusiveTransactionAsync(async (txn) => {
     id = (
-      await txn.runAsync('INSERT INTO payment (customer_id, paid_on, amount_paise, note) VALUES (?, ?, ?, ?)', [customerId, paidOn, amountPaise, note.trim()])
+      await txn.runAsync('INSERT INTO payment (customer_id, paid_on, amount_paise, note, txn_ref, screenshot) VALUES (?, ?, ?, ?, ?, ?)', [customerId, paidOn, amountPaise, note.trim(), txnRef.trim(), screenshot])
     ).lastInsertRowId
     for (const a of allocations) {
       await txn.runAsync('INSERT INTO payment_month (payment_id, month, amount_paise) VALUES (?, ?, ?)', [id, a.month, a.amountPaise])

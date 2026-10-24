@@ -76,4 +76,7 @@ export const MIGRATIONS: string[] = [
    CREATE TABLE setting (key TEXT PRIMARY KEY, value TEXT NOT NULL);
    CREATE INDEX day_entry_date ON day_entry (date);
    CREATE INDEX payment_customer ON payment (customer_id);`,
+  // 2: the customer's transaction number and a local screenshot file for each payment.
+  `ALTER TABLE payment ADD COLUMN txn_ref TEXT NOT NULL DEFAULT '';
+   ALTER TABLE payment ADD COLUMN screenshot TEXT;`,
 ]

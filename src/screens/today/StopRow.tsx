@@ -11,11 +11,14 @@ export function StopRow({
   types,
   onTick,
   onEdit,
+  reorder,
 }: {
   stop: RouteStop
   types: MilkTypeRow[]
   onTick: () => void
   onEdit: () => void
+  /** When set the row shows its place and up/down buttons instead of tick and edit. */
+  reorder?: { index: number; count: number; onMove: (delta: -1 | 1) => void }
 }) {
   const state = stopState(stop.items)
   const name = (id: number) => types.find((t) => t.id === id)?.name ?? ''
@@ -24,6 +27,36 @@ export function StopRow({
     .map((i) => `${name(i.milkTypeId)} ${litres(i.qtyMl)}`)
     .join(' · ')
   const tone = state === 'changed' ? { bg: C.amber, fg: C.amberText } : state === 'none' ? { bg: C.none, fg: muted } : { bg: C.sky, fg: C.blueText }
+
+  if (reorder) {
+    const arrow = (delta: -1 | 1, off: boolean) => (
+      <Pressable
+        onPress={() => reorder.onMove(delta)}
+        disabled={off}
+        hitSlop={6}
+        accessibilityRole="button"
+        accessibilityLabel={delta < 0 ? tr('Move {name} up', { name: stop.customer.name }) : tr('Move {name} down', { name: stop.customer.name })}
+        style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.sky, alignItems: 'center', justifyContent: 'center', opacity: off ? 0.3 : 1 }}
+      >
+        <View style={{ transform: [{ rotate: '90deg' }] }}>
+          <Icon name={delta < 0 ? 'left' : 'right'} size={20} color={C.blueText} />
+        </View>
+      </Pressable>
+    )
+    return (
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space(3), backgroundColor: C.white, borderColor: C.line, borderWidth: 1, borderRadius: radius.card, marginBottom: space(2), padding: space(3) }}>
+        <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: C.sky, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontFamily: font.display, fontSize: 13, color: C.blueText }}>{reorder.index + 1}</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontFamily: font.display, fontSize: 16, color: C.navy }} numberOfLines={1}>{stop.customer.name}</Text>
+          <Text style={{ fontFamily: font.body, fontSize: 13, color: muted }} numberOfLines={1}>{state === 'none' ? tr('Not delivered') : qty}</Text>
+        </View>
+        {arrow(-1, reorder.index === 0)}
+        {arrow(1, reorder.index === reorder.count - 1)}
+      </View>
+    )
+  }
 
   return (
     <View

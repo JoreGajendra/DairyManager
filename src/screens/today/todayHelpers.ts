@@ -1,5 +1,6 @@
 import { QTY_STEP_ML, litreDigits, mlFromText } from '../../lib'
 import type { RouteStop } from '../../dataHelpers'
+import { moveId } from '../customers/customerView'
 
 /** Pure decisions for the Today screen, kept apart from React so they can be tested. */
 
@@ -49,3 +50,15 @@ export function dayItems(lines: { milkTypeId: number; text: string }[]): { milkT
 /** Every milk of the stop set to 0: the customer was not delivered to. */
 export const notDeliveredItems = (items: { milkTypeId: number }[]): { milkTypeId: number; qtyMl: number }[] =>
   items.map((i) => ({ milkTypeId: i.milkTypeId, qtyMl: 0 }))
+
+/**
+ * Moves one stop a place up or down the round. Only the customers on today's
+ * round (`shownIds`) move; paused, stopped and not-today customers keep their
+ * own places in `allIds`, which is what gets saved.
+ */
+export function reorderRoute(allIds: number[], shownIds: number[], id: number, delta: -1 | 1): { shown: number[]; all: number[] } {
+  const shown = moveId(shownIds, id, delta)
+  let n = 0
+  const all = allIds.map((x) => (shownIds.includes(x) ? shown[n++]! : x))
+  return { shown, all }
+}

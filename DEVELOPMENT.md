@@ -8,7 +8,7 @@ Guide for working in this repo.
 
 ## What this is
 
-MilkDiary (provider side): an Android app for a milk provider (milkman) who serves many households. Per customer it tracks the daily delivery, produces the month bill and records payments and dues. It is a standalone project. The household-side app lives at `E:\DairyManagementApp` and is not modified from here.
+DairyManager (provider side; the household app is "MilkDiary"): an Android app for a milk provider (milkman) who serves many households. Per customer it tracks the daily delivery, produces the month bill and records payments and dues. It is a standalone project. The household-side app lives at `E:\DairyManagementApp` and is not modified from here.
 
 ## Planned layout
 
@@ -51,7 +51,7 @@ There is no automatic sync. A fix made in one project must be applied by hand to
 
 ## Open item
 
-Application ID confirmed by the owner: `app.milkdiary.provider`, scheme `milkdiaryprovider`, display name "MilkDiary Provider" (household app uses `app.milkdiary` / `milkdiary`).
+Application ID confirmed by the owner: `app.milkdiary.provider`, scheme `milkdiaryprovider`, display name "DairyManager" (renamed 2026-10-24, DairyDesk then DairyManager; ID and scheme unchanged) (household app uses `app.milkdiary` / `milkdiary`).
 
 ## Design tokens
 

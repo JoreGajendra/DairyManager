@@ -3,13 +3,13 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 import { dateLabel, nextDay, previousDay, setLang, todayIso, tr, weekdayLabel } from '../lib'
 import type { IsoDate } from '../lib'
 import type { RouteStop } from '../dataHelpers'
-import { loadRoute, setTick } from '../db'
+import { loadRoute, setRouteOrder, setTick } from '../db'
 import type { Setup } from '../db'
 import { C, font, muted, space } from '../ui/theme'
 import { Body, Card, Icon, LoadFailed, Loading, Muted, Title, notify, styles } from '../ui/ui'
 import { EditSheet } from './today/EditSheet'
 import { StopRow } from './today/StopRow'
-import { progressOf } from './today/todayHelpers'
+import { progressOf, reorderRoute } from './today/todayHelpers'
 
 /** The day's round: customers in route order, tick as delivered, change a quantity. */
 export function TodayScreen() {
@@ -17,6 +17,7 @@ export function TodayScreen() {
   const [route, setRoute] = useState<{ setup: Setup; stops: RouteStop[] } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState<RouteStop | null>(null)
+  const [reordering, setReordering] = useState(false)
   const latest = useRef(0)
 
   const load = useCallback(async (d: IsoDate) => {
@@ -42,6 +43,26 @@ export function TodayScreen() {
     setRoute((r) => r && { ...r, stops: r.stops.map((s) => (s.customer.id === stop.customer.id ? { ...s, ticked } : s)) })
     try {
       await setTick(stop.customer.id, date, ticked)
+    } catch (e) {
+      notify(e instanceof Error ? e.message : String(e), 'error')
+      void load(date)
+    }
+  }
+
+  const move = async (stop: RouteStop, delta: -1 | 1) => {
+    if (!route) return
+    const { shown, all } = reorderRoute(
+      route.setup.customers.map((c) => c.id),
+      route.stops.map((s) => s.customer.id),
+      stop.customer.id,
+      delta,
+    )
+    setRoute({
+      setup: { ...route.setup, customers: all.map((id) => route.setup.customers.find((c) => c.id === id)!) },
+      stops: shown.map((id) => route.stops.find((s) => s.customer.id === id)!),
+    })
+    try {
+      await setRouteOrder(all)
     } catch (e) {
       notify(e instanceof Error ? e.message : String(e), 'error')
       void load(date)
@@ -89,8 +110,27 @@ export function TodayScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={{ paddingHorizontal: space(5), paddingBottom: space(6) }}>
-          {stops.map((s) => (
-            <StopRow key={s.customer.id} stop={s} types={route.setup.types} onTick={() => void toggle(s)} onEdit={() => setEditing(s)} />
+          {stops.length > 1 ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space(2) }}>
+              <Muted>{reordering ? tr('Use the arrows to set the order of your round.') : ''}</Muted>
+              <Pressable
+                onPress={() => setReordering(!reordering)}
+                accessibilityRole="button"
+                style={{ flexDirection: 'row', alignItems: 'center', gap: space(1.5), paddingVertical: space(1.5), paddingHorizontal: space(3), borderRadius: 999, backgroundColor: reordering ? C.blue : C.sky }}
+              >
+                <Text style={{ fontFamily: font.body, fontSize: 13, fontWeight: '700', color: reordering ? C.white : C.blueText }}>{reordering ? tr('Done') : tr('Reorder')}</Text>
+              </Pressable>
+            </View>
+          ) : null}
+          {stops.map((s, i) => (
+            <StopRow
+              key={s.customer.id}
+              stop={s}
+              types={route.setup.types}
+              onTick={() => void toggle(s)}
+              onEdit={() => setEditing(s)}
+              reorder={reordering ? { index: i, count: stops.length, onMove: (d) => void move(s, d) } : undefined}
+            />
           ))}
         </ScrollView>
       )}

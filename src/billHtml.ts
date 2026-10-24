@@ -83,7 +83,7 @@ function head(title: string, period: string, ref: string, settings: BillHeader, 
   const lines = (parts: string[]) => parts.map((l) => l.trim()).filter(Boolean).map(esc).join('<br>')
   const meta = (label: string, value: string) => `<tr><td class="m">${label}</td><td class="r b">${value}</td></tr>`
   return `<div class="band">
-    <div><div class="brand">${name ? esc(name) : 'milk<b>diary</b>'}</div>${phone ? `<div class="bandsub">${tr('Phone')} ${esc(phone)}</div>` : ''}</div>
+    <div><div class="brand">${name ? esc(name) : 'Dairy<b>Manager</b>'}</div>${phone ? `<div class="bandsub">${tr('Phone')} ${esc(phone)}</div>` : ''}</div>
     <div class="bandtitle">${title}</div></div>
   <div class="parties">
     <div><div class="l">${tr('Bill to')}</div><div class="b" style="font-size:14px">${esc(settings.customerName)}</div>${lines([settings.customerPhone, settings.customerAddress])}</div>
@@ -207,7 +207,7 @@ const foot = () => `<div class="foot">${tr('Thank you!')}</div>`
  * transaction screenshot, and each of those months' bills.
  */
 export function receiptHtml(
-  payment: Payment,
+  payment: Payment & { txnRef?: string },
   ledger: Ledger,
   bills: Record<string, MonthBill>,
   types: MilkType[],
@@ -233,7 +233,7 @@ export function receiptHtml(
       .join('')
     return page(
       head(tr('Payment'), dateLabel(payment.paidOn), `PR-${String(payment.id).padStart(4, '0')}`, settings) +
-        `<div class="total" style="border-top:0;padding-top:0"><div><div class="l">${tr('Paid')}</div>${payment.note ? esc(payment.note) : ''}</div><div class="fig">${inr(payment.amountPaise)}</div></div>
+        `<div class="total" style="border-top:0;padding-top:0"><div><div class="l">${tr('Paid')}</div>${payment.note ? esc(payment.note) : ''}${payment.txnRef ? `<div class="m">${tr('Txn no {ref}', { ref: esc(payment.txnRef) })}</div>` : ''}</div><div class="fig">${inr(payment.amountPaise)}</div></div>
       <table style="margin-top:14px"><tr><th>${tr('For')}</th><th class="r">${tr('Bill')}</th><th class="r">${tr('Paid now')}</th><th></th></tr>${rows}</table>
       <div class="total" style="margin-top:14px"><div class="l">${tr('Still to pay on finished months')}</div><div class="fig" style="font-size:18px">${inr(ledger.duePaise)}</div></div>` +
         picture +

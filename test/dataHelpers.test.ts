@@ -257,12 +257,18 @@ describe('schema and backup', () => {
   })
   it('rejects bad backups', () => {
     const good = serialiseBackup({}, MIGRATIONS.length, 'x')
-    expect(() => parseBackup('nope', 1)).toThrow()
-    expect(() => parseBackup(JSON.stringify({ ...good, app: 'other' }), 1)).toThrow()
-    expect(() => parseBackup(JSON.stringify({ ...good, schema: 99 }), 1)).toThrow(/newer/)
-    const bad = { ...good, tables: { ...good.tables, payment: [{ id: 1, customer_id: 1, paid_on: 'x', amount_paise: 1.5, note: '' }] } }
-    expect(() => parseBackup(JSON.stringify(bad), 1)).toThrow(/amount_paise/)
-    expect(() => parseBackup(JSON.stringify({ ...good, tables: { ...good.tables, tick: undefined } }), 1)).toThrow(/tick/)
+    expect(() => parseBackup('nope', MIGRATIONS.length)).toThrow()
+    expect(() => parseBackup(JSON.stringify({ ...good, app: 'other' }), MIGRATIONS.length)).toThrow()
+    expect(() => parseBackup(JSON.stringify({ ...good, schema: 99 }), MIGRATIONS.length)).toThrow(/newer/)
+    const bad = { ...good, tables: { ...good.tables, payment: [{ id: 1, customer_id: 1, paid_on: 'x', amount_paise: 1.5, note: '', txn_ref: '', screenshot: null }] } }
+    expect(() => parseBackup(JSON.stringify(bad), MIGRATIONS.length)).toThrow(/amount_paise/)
+    expect(() => parseBackup(JSON.stringify({ ...good, tables: { ...good.tables, tick: undefined } }), MIGRATIONS.length)).toThrow(/tick/)
+  })
+  it('accepts a backup made before payments had a transaction number', () => {
+    const old = serialiseBackup({}, 1, 'x')
+    const tables = { ...old.tables, payment: [{ id: 1, customer_id: 1, paid_on: '2026-01-01', amount_paise: 100, note: '' }] }
+    const back = parseBackup(JSON.stringify({ ...old, tables }), MIGRATIONS.length)
+    expect(back.tables.payment[0]).toMatchObject({ txn_ref: '', screenshot: null })
   })
   it('enforces pause and payment constraints in SQL', () => {
     const d = open()

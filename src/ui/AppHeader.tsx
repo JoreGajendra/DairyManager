@@ -15,7 +15,7 @@ export function AppHeader({ name, phone, top }: { name: string; phone: string; t
       <Logo size={36} />
       <View style={{ flex: 1 }}>
         <Text numberOfLines={1} style={{ fontFamily: font.display, fontSize: 21, color: C.white }}>
-          {shown || 'MilkDiary'}
+          {shown || 'DairyManager'}
         </Text>
         <Text numberOfLines={1} style={{ fontFamily: font.body, fontSize: 12, color: C.butter, letterSpacing: 0.3 }}>
           {phone.trim() || tr('Milk delivery')}

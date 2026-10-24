@@ -87,7 +87,7 @@ export function Logo({ size = 30, word = false }: { size?: number; word?: boolea
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: size * 0.26 }}>
       {mark}
       <Text style={{ fontFamily: font.display, fontSize: size * 0.66, color: C.navy }}>
-        milk<Text style={{ color: C.blueText }}>diary</Text>
+        Dairy<Text style={{ color: C.blueText }}>Manager</Text>
       </Text>
     </View>
   )

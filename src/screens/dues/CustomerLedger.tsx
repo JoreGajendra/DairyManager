@@ -2,7 +2,10 @@
 import { useEffect, useState } from 'react'
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native'
 import { dateLabel, dueReminderMessage, inr, monthLabel, tr } from '../../lib'
-import type { LedgerMonth, Payment } from '../../lib'
+import type { LedgerMonth } from '../../lib'
+import type { PaymentRecord } from '../../dataHelpers'
+import { ShotThumb } from './ShotView'
+import { dropScreenshot } from './paymentShot'
 import { deletePayment, loadCustomer } from '../../db'
 import type { CustomerData } from '../../db'
 import { C, font, muted, space } from '../../ui/theme'
@@ -50,7 +53,7 @@ export function CustomerLedger({ customerId, onBack, onChanged }: { customerId: 
       inLanguage(setup.settings.language, () => dueReminderMessage(lines, customer.name, setup.settings.businessName)),
     ).catch((e: unknown) => setError(errText(e)))
 
-  const remove = (p: Payment) =>
+  const remove = (p: PaymentRecord) =>
     Alert.alert(tr('Delete payment?'), tr('{amount} paid on {date}. The balance goes back up.', { amount: inr(p.amountPaise), date: dateLabel(p.paidOn) }), [
       { text: tr('Cancel'), style: 'cancel' },
       {
@@ -60,6 +63,7 @@ export function CustomerLedger({ customerId, onBack, onChanged }: { customerId: 
           void guard(() =>
             deletePayment(p.id)
               .then(async () => {
+                dropScreenshot(p.screenshot)
                 onChanged()
                 await reload()
                 notify(tr('Payment deleted'))
@@ -119,7 +123,9 @@ export function CustomerLedger({ customerId, onBack, onChanged }: { customerId: 
                   {p.allocations.length ? ` · ${p.allocations.map((a) => monthLabel(a.month)).join(', ')}` : ` · ${tr('credit')}`}
                   {p.note ? ` · ${p.note}` : ''}
                 </Muted>
+                {p.txnRef ? <Muted>{tr('Txn no {ref}', { ref: p.txnRef })}</Muted> : null}
               </View>
+              {p.screenshot ? <ShotThumb name={p.screenshot} /> : null}
               <Pressable onPress={() => remove(p)} hitSlop={10} accessibilityRole="button" accessibilityLabel={tr('Delete payment?')}>
                 <Text style={{ fontFamily: font.body, fontSize: 13, color: C.danger }}>{tr('Delete')}</Text>
               </Pressable>

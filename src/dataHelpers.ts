@@ -42,7 +42,9 @@ export type CustomerRate = ForCustomer<Rate>
 export type CustomerPlan = ForCustomer<Plan>
 export type CustomerEntry = ForCustomer<DayEntry>
 export type CustomerPause = ForCustomer<Pause>
-export type CustomerPayment = ForCustomer<Payment>
+/** `txnRef`: the customer's transaction number, if they gave one. `screenshot`: file name in the app's documents folder. */
+export type PaymentRecord = Payment & { txnRef?: string }
+export type CustomerPayment = ForCustomer<PaymentRecord>
 export type CustomerCreditUse = ForCustomer<CreditUse & { id: number; usedOn: IsoDate }>
 
 /** Every row of the billing tables, whole. The tables are small. */
@@ -237,7 +239,7 @@ export interface CustomerAccount {
   current: MonthBill
   outstanding: Outstanding
   /** Newest first. */
-  payments: Payment[]
+  payments: PaymentRecord[]
 }
 
 export function billMonth(book: Book, types: MilkType[], month: IsoMonth, today: IsoDate): MonthBill {
@@ -312,7 +314,7 @@ export const BACKUP_TABLES = {
   plan: { customer_id: 'int', milk_type_id: 'int', effective_from: 'text', qty_ml: 'int' },
   day_entry: { customer_id: 'int', date: 'text', milk_type_id: 'int', qty_ml: 'int' },
   pause: { id: 'int', customer_id: 'int', from_date: 'text', resume_on: 'text?' },
-  payment: { id: 'int', customer_id: 'int', paid_on: 'text', amount_paise: 'int', note: 'text' },
+  payment: { id: 'int', customer_id: 'int', paid_on: 'text', amount_paise: 'int', note: 'text', txn_ref: 'text', screenshot: 'text?' },
   payment_month: { payment_id: 'int', month: 'text', amount_paise: 'int' },
   credit_use: { id: 'int', customer_id: 'int', month: 'text', amount_paise: 'int', used_on: 'text' },
   tick: { customer_id: 'int', date: 'text' },
@@ -354,11 +356,11 @@ export function parseBackup(text: string, currentSchema: number): Backup {
   try {
     data = JSON.parse(text)
   } catch {
-    throw new Error(tr('This file is not a MilkDiary backup.'))
+    throw new Error(tr('This file is not a DairyManager backup.'))
   }
   const b = data as Partial<Backup> | null
   if (!b || typeof b !== 'object' || b.app !== BACKUP_APP || typeof b.schema !== 'number' || !b.tables || typeof b.tables !== 'object') {
-    throw new Error(tr('This file is not a MilkDiary backup.'))
+    throw new Error(tr('This file is not a DairyManager backup.'))
   }
   if (b.schema > currentSchema) throw new Error(tr('This backup was made by a newer version of the app.'))
   for (const t of BACKUP_ORDER) {
@@ -367,6 +369,8 @@ export function parseBackup(text: string, currentSchema: number): Backup {
     const spec: Record<string, Kind> = BACKUP_TABLES[t]
     rows.forEach((row, i) => {
       if (!row || typeof row !== 'object') throw new Error(tr('Bad row {n} in "{table}".', { n: i + 1, table: t }))
+      // Backups made before schema 2 have no transaction number or screenshot.
+      if (t === 'payment' && b.schema! < 2) Object.assign(row, { txn_ref: '', screenshot: null })
       for (const [col, kind] of Object.entries(spec)) {
         if (!kindOk(kind, (row as Record<string, unknown>)[col])) {
           throw new Error(tr('Bad value for {column} in row {n} of "{table}".', { column: col, n: i + 1, table: t }))

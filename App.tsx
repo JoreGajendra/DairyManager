@@ -17,7 +17,7 @@ import { Icon, Loading, Notifier } from './src/ui/ui'
 import type { IconName } from './src/ui/ui'
 
 /**
- * MilkDiary Provider. Five tabs; navigation is a piece of state rather than a
+ * DairyManager. Five tabs; navigation is a piece of state rather than a
  * library. Every screen is inset by hand because Android draws edge to edge.
  */
 type Tab = 'today' | 'customers' | 'bills' | 'dues' | 'setup'

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { monthBill, setLang } from '../src/lib'
 import type { LedgerMonth } from '../src/lib'
-import { billFileName, billHeader, billRow, billTotals, billWhatsApp, sendAllQueue, visibleRows } from '../src/screens/bills/billsModel'
+import { billFileName, billHeader, receiptFileName, billRow, billTotals, billWhatsApp, sendAllQueue, visibleRows } from '../src/screens/bills/billsModel'
 
 afterEach(() => setLang('en'))
 
@@ -88,5 +88,11 @@ describe('billFileName', () => {
   it('keeps Marathi names and falls back when nothing is left', () => {
     expect(billFileName('2026-03', 'आशा पाटील')).toBe('MilkBill-March-2026-आशा-पाटील')
     expect(billFileName('2026-03', '???')).toBe('MilkBill-March-2026-Customer')
+  })
+})
+
+describe('receiptFileName', () => {
+  it('is Receipt-date-customer', () => {
+    expect(receiptFileName('2026-10-24', 'Asha Patil')).toBe('Receipt-2026-10-24-Asha-Patil')
   })
 })

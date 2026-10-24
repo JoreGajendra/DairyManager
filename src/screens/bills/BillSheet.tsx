@@ -59,7 +59,7 @@ export function BillSheet({
     <View style={{ backgroundColor: C.white, overflow: 'hidden' }}>
       <View style={{ backgroundColor: C.navy, borderBottomWidth: 4, borderBottomColor: C.butter, paddingHorizontal: space(5), paddingTop: space(5), paddingBottom: space(4), flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <View style={{ flexShrink: 1 }}>
-          <Text style={{ fontFamily: font.display, fontSize: 22, color: C.white }}>{header.businessName || 'milkdiary'}</Text>
+          <Text style={{ fontFamily: font.display, fontSize: 22, color: C.white }}>{header.businessName || 'DairyManager'}</Text>
           {header.businessPhone ? <Text style={{ ...body, color: 'rgba(255,255,255,0.75)', marginTop: 2 }}>{`${tr('Phone')} ${header.businessPhone}`}</Text> : null}
         </View>
         <Text style={{ fontFamily: font.display, fontSize: 18, letterSpacing: 1.2, color: C.butter, textTransform: 'uppercase' }}>{tr('Milk bill')}</Text>

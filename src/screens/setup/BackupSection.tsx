@@ -23,10 +23,10 @@ export function BackupSection({ onRestored }: { onRestored: () => void }) {
   const exportFile = async () => {
     setError(null)
     try {
-      const file = new File(Paths.cache, `milkdiary-provider-backup-${todayIso()}.json`)
+      const file = new File(Paths.cache, `dairymanager-backup-${todayIso()}.json`)
       file.create({ overwrite: true })
       file.write(await exportBackupJson())
-      await Sharing.shareAsync(file.uri, { mimeType: 'application/json', dialogTitle: tr('MilkDiary backup') })
+      await Sharing.shareAsync(file.uri, { mimeType: 'application/json', dialogTitle: tr('DairyManager backup') })
       notify(tr('Backup file created'))
     } catch (e) {
       fail(new Error(tr('Backup failed: {error}', { error: e instanceof Error ? e.message : String(e) })))

@@ -25,8 +25,11 @@ import type { CustomerData } from '../db'
 import { C, faint, font, space } from '../ui/theme'
 import { Button, Card, DateChoice, ErrorNote, Field, Icon, Label, Loading, Muted, notify, styles, useGuard } from '../ui/ui'
 import { creditOffer, inLanguage, payableMonths, planPayment, suggestedPaise } from './dues/duesLogic'
+import { dropScreenshot, pickScreenshot, screenshotForPdf } from './dues/paymentShot'
 import { Sheet } from './dues/Sheet'
+import { ShotThumb } from './dues/ShotView'
 import { sendWhatsApp, sharePdf } from './dues/share'
+import { receiptFileName } from './bills/billsModel'
 
 export function RecordPaymentSheet({ customerId, onDone, onClose }: { customerId: number; onDone: () => void; onClose: () => void }) {
   const [data, setData] = useState<CustomerData | null>(null)
@@ -35,6 +38,8 @@ export function RecordPaymentSheet({ customerId, onDone, onClose }: { customerId
   const [amount, setAmount] = useState<string | null>(null)
   const [date, setDate] = useState<IsoDate | null>(todayIso())
   const [note, setNote] = useState('')
+  const [txnRef, setTxnRef] = useState('')
+  const [shot, setShot] = useState<string | null>(null)
   const [manual, setManual] = useState<Record<IsoMonth, string> | null>(null)
   const [saving, setSaving] = useState(false)
   const [savedId, setSavedId] = useState<number | null>(null)
@@ -50,7 +55,27 @@ export function RecordPaymentSheet({ customerId, onDone, onClose }: { customerId
     void reload()
   }, [customerId])
 
-  const finish = () => (changed.current ? onDone() : onClose())
+  const finish = () => {
+    if (savedId === null) dropScreenshot(shot)
+    changed.current ? onDone() : onClose()
+  }
+
+  const attach = () =>
+    guard(async () => {
+      try {
+        const name = await pickScreenshot()
+        if (!name) return
+        dropScreenshot(shot)
+        setShot(name)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e))
+      }
+    })
+
+  const detach = () => {
+    dropScreenshot(shot)
+    setShot(null)
+  }
 
   if (!data) {
     return <Sheet onClose={onClose}>{error ? <ErrorNote>{error}</ErrorNote> : <Loading />}</Sheet>
@@ -90,7 +115,7 @@ export function RecordPaymentSheet({ customerId, onDone, onClose }: { customerId
     setSaving(true)
     setError(null)
     try {
-      const id = await addPayment(customerId, date, paise, note, plan.allocations)
+      const id = await addPayment(customerId, date, paise, note, plan.allocations, txnRef, shot)
       changed.current = true
       await reload()
       setSavedId(id)
@@ -141,7 +166,7 @@ export function RecordPaymentSheet({ customerId, onDone, onClose }: { customerId
           customerAddress: customer.address,
           lang,
         }
-        await sharePdf(receiptHtml(saved, ledger, data.bills, setup.types, header, {}, null), tr('Payment receipt'))
+        await sharePdf(receiptHtml(saved, ledger, data.bills, setup.types, header, {}, await screenshotForPdf(saved.screenshot)), tr('Payment receipt'), receiptFileName(saved.paidOn, customer.name))
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e))
       } finally {
@@ -240,8 +265,22 @@ export function RecordPaymentSheet({ customerId, onDone, onClose }: { customerId
         placeholderTextColor={faint}
         maxLength={100}
         accessibilityLabel={tr('How it was paid')}
-        style={[styles.input, { marginBottom: space(4) }]}
+        style={[styles.input, { marginBottom: space(3) }]}
       />
+
+      <Field label={tr('Transaction number (optional)')} value={txnRef} onChangeText={setTxnRef} placeholder={tr('UPI reference or cheque no.')} maxLength={60} />
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space(3), marginBottom: space(4) }}>
+        {shot ? <ShotThumb name={shot} size={56} /> : null}
+        <Button variant="ghost" icon="image" style={{ flex: 1 }} disabled={saving} onPress={attach}>
+          {shot ? tr('Change screenshot') : tr('Attach screenshot')}
+        </Button>
+        {shot ? (
+          <Pressable onPress={detach} hitSlop={10} accessibilityRole="button" accessibilityLabel={tr('Remove screenshot')}>
+            <Text style={{ fontFamily: font.body, fontSize: 13, color: C.danger }}>{tr('Remove')}</Text>
+          </Pressable>
+        ) : null}
+      </View>
 
       {error ? <ErrorNote>{error}</ErrorNote> : paise && plan.error ? <ErrorNote>{plan.error}</ErrorNote> : null}
       <View style={{ flexDirection: 'row', gap: space(2.5), marginTop: space(2) }}>

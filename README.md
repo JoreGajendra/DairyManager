@@ -1,4 +1,4 @@
-# MilkDiary Provider
+# DairyManager
 
 Android app for a milk provider (milkman) who serves many households. For each customer it tracks the daily delivery, produces the month bill, and records payments and dues. English and Marathi.
 
@@ -33,7 +33,7 @@ npm run typecheck    # tsc --noEmit
 
 - Application ID: `app.milkdiary.provider`
 - Scheme: `milkdiaryprovider`
-- Display name: MilkDiary Provider
+- Display name: DairyManager
 
 The household app uses `app.milkdiary`, so both can be installed side by side.
 
