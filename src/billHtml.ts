@@ -69,14 +69,15 @@ const STYLE = `
 const page = (body: string) => `<!doctype html><html><head><meta charset="utf-8"><style>${STYLE}</style></head><body>${body}</body></html>`
 
 function head(title: string, subtitle: string, settings: BillHeader): string {
+  const name = settings.businessName.trim()
   const party = (label: string, lines: string[], align: string) => {
     const shown = lines.map((l) => l.trim()).filter(Boolean)
     return shown.length ? `<div style="text-align:${align}"><div class="l">${label}</div>${shown.map(esc).join('<br>')}</div>` : '<div></div>'
   }
   return `<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px">
-    <div class="brand">milk<b>diary</b></div>
+    <div class="brand">${name ? esc(name) : 'milk<b>diary</b>'}</div>
     <div style="text-align:right"><h1>${title}</h1><div class="m">${subtitle}</div></div></div>
-  <div style="display:flex;justify-content:space-between;margin-bottom:16px">${party(tr('From'), [settings.businessName, settings.businessPhone], 'left')}${party(tr('To'), [settings.customerName, settings.customerPhone, settings.customerAddress], 'right')}</div>`
+  <div style="display:flex;justify-content:space-between;margin-bottom:16px">${party(tr('From'), [settings.businessPhone], 'left')}${party(tr('To'), [settings.customerName, settings.customerPhone, settings.customerAddress], 'right')}</div>`
 }
 
 /** One month in the sheet layout, with its amount lines and the days that were different. */

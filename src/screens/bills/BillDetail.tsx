@@ -96,10 +96,13 @@ export function BillDetail({
       <View ref={card} collapsable={false} style={{ backgroundColor: C.milk }}>
         <Card>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: space(3) }}>
-            <Logo size={24} word />
+            {settings.businessName.trim() ? (
+              <Text style={{ fontFamily: font.display, fontSize: 20, color: C.navy, flexShrink: 1 }}>{settings.businessName.trim()}</Text>
+            ) : (
+              <Logo size={24} word />
+            )}
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={{ fontFamily: font.display, fontSize: 15, color: C.navy }}>{monthLabel(month)}</Text>
-              {settings.businessName ? <Muted>{settings.businessName}</Muted> : null}
               <Muted>{tr('To: {name}', { name: customer.name })}</Muted>
             </View>
           </View>
