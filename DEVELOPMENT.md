@@ -4,7 +4,7 @@ Guide for working in this repo.
 
 ## Status
 
-**Design phase. Do not scaffold or implement until the owner approves `PLAN.md` and the UI-flow presentation.** `PLAN.md` holds the decisions, schema, screens and phases. Follow its phase order and stop for review at each phase exit.
+Phases 0 to 6 are done and Phase 7 (polish and release) is in progress. `PLAN.md` holds the decisions, schema, screens and phases. Run `npm test` and `npm run typecheck` before every commit.
 
 ## What this is
 
