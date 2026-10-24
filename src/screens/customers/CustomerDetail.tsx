@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native'
 import { inr, litres, monthLabel, monthOf, perLitre, todayIso, tr } from '../../lib'
-import type { IsoDate, IsoMonth } from '../../lib'
+import type { BillDay, IsoDate, IsoMonth } from '../../lib'
 import { deactivateCustomer, loadCustomer, loadMonth, reactivateCustomer, setRouteOrder } from '../../db'
 import type { CustomerData, MonthData } from '../../db'
 import { C, font, space } from '../../ui/theme'
 import { Body, Button, Card, DateChoice, ErrorNote, Header, Label, LoadFailed, Loading, useGuard, Muted, MonthBar, Row, notify, useBack } from '../../ui/ui'
 import { RecordPaymentSheet } from '../RecordPaymentSheet'
+import { EditSheet } from '../today/EditSheet'
 import { CustomerForm } from './CustomerForm'
 import { MilkEditor } from './MilkEditor'
 import { MonthCalendar } from './MonthCalendar'
@@ -23,6 +24,7 @@ export function CustomerDetail({ customerId, onBack }: { customerId: number; onB
   const [missing, setMissing] = useState(false)
   const [editing, setEditing] = useState<Editing>(null)
   const [form, setForm] = useState(false)
+  const [editDay, setEditDay] = useState<BillDay | null>(null)
   const [paying, setPaying] = useState(false)
   const [stopping, setStopping] = useState(false)
   const [stopFrom, setStopFrom] = useState<IsoDate | null>(todayIso())
@@ -132,7 +134,7 @@ export function CustomerDetail({ customerId, onBack }: { customerId: number; onB
 
       <Card>
         <MonthBar month={month} onChange={setMonth} />
-        <MonthCalendar month={month} days={bill.days} />
+        <MonthCalendar month={month} days={bill.days} onPickDay={setEditDay} />
         <Legend />
       </Card>
 
@@ -169,6 +171,18 @@ export function CustomerDetail({ customerId, onBack }: { customerId: number; onB
         <Label>{tr('Payments')}</Label>
         <Button onPress={() => setPaying(true)}>{tr('Record payment')}</Button>
       </Card>
+      {editDay ? (
+        <EditSheet
+          stop={{ customer, items: editDay.items.filter((i) => i.plannedMl > 0 || i.qtyMl > 0), ticked: false }}
+          types={setup.types}
+          date={editDay.date}
+          onClose={() => setEditDay(null)}
+          onSaved={() => {
+            setEditDay(null)
+            void reload()
+          }}
+        />
+      ) : null}
       {paying ? (
         <RecordPaymentSheet
           customerId={customerId}
