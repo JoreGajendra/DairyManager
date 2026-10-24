@@ -8,11 +8,11 @@ Everything is stored in a local SQLite database on the phone. There is no server
 
 | Tab | Purpose |
 |---|---|
-| Today | Route list in delivery order. Tap to tick a delivery; edit the quantity or mark not delivered. Progress counter. |
-| Customers | Add, edit, pause and deactivate customers. Plan, rate and route order per customer. |
-| Bills | Month picker, per-customer bill, share as PDF, image or WhatsApp, "send all" stepper. |
-| Dues | Total owed, per-customer outstanding, record payment (advance, part, multi-month, credit), receipt and reminder messages. |
-| Setup | Business name and phone, language, milk types with default rate, bulk rate change, JSON backup and restore. |
+| Today | Route list in delivery order. Tap to tick a delivery; edit the quantity, add extra or replacement milk, or mark not delivered. Reorder the round with arrows. Progress counter. |
+| Customers | Add, edit, pause and deactivate customers. Plan, rate and route order per customer. Month calendar where any day can be tapped and changed. |
+| Bills | Month picker, per-customer bill with a delivery calendar, share as PDF, image or WhatsApp (files named `MilkBill-Month-Year-Customer`), "send all" stepper. |
+| Dues | Total owed, per-customer outstanding, record payment (advance, part, multi-month, credit) with an optional transaction number and a screenshot from the customer, receipt PDF and reminder messages. |
+| Setup | Business name and phone (shown in the app header and on bills), language, milk types with default rate, bulk rate change, JSON backup and restore. |
 
 ## Requirements
 
@@ -63,7 +63,7 @@ test/              vitest suites
 
 ## Backup
 
-Setup, Backup exports all data as JSON. Restoring replaces the current data and applies the saved language.
+Setup, Backup exports all data as JSON. Restoring replaces the current data and applies the saved language. Payment screenshots are stored on the phone and are not part of the JSON file, so they do not move to another phone.
 
 ## Origin of shared code
 

@@ -19,12 +19,12 @@ This project is the other side: an app for the **milk provider (milkman)** who s
 | Shared code | Copied from the household app, not linked |
 | Languages | English and Marathi |
 | Platform | Android only for v1 |
-| App name | MilkDiary |
+| App name | DairyManager (first called MilkDiary) |
 | Pricing | Per customer; milk-type default rate seeds a new customer; bulk "change rate from date" action |
 
 ### Open item
 
-The household app already uses package `app.milkdiary` and scheme `milkdiary`. Installing two apps with one application ID overwrites the first. Proposed for this app: package/bundle `app.milkdiary.provider`, scheme `milkdiaryprovider`, display name "MilkDiary Provider". Owner to confirm before Phase 1.
+The household app already uses package `app.milkdiary` and scheme `milkdiary`. Installing two apps with one application ID overwrites the first. Proposed for this app: package/bundle `app.milkdiary.provider`, scheme `milkdiaryprovider`, display name "MilkDiary Provider". Confirmed; the display name was later changed to "DairyManager".
 
 ### Pricing note
 
