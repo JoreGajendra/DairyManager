@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "MilkDiary Provider",
+    "slug": "milkdiary-provider",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "platforms": ["android"],
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#2563A8",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "app.milkdiary.provider"
+    },
+    "scheme": "milkdiaryprovider",
+    "plugins": ["expo-font", "expo-sharing", "expo-sqlite"]
+  }
+}

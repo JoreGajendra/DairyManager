@@ -40,17 +40,18 @@ Single Expo package (Expo ~57, React Native 0.86, React 19, TypeScript, expo-sql
 
 ## Copied code provenance
 
-Copied from `E:\DairyManagementApp\code` (not yet copied; record the date here when Phase 1 does it):
+Copied from `E:\DairyManagementApp\code` (copied 2026-10-24, Phase 1):
 
-- `shared/src`: `billing`, `ledger`, `money`, `quantity`, `dates`, `i18n`, `mr`, `templates`, wa.me helpers from `messages`
-- `shared/test`: matching vitest files
-- `mobile/src`: `theme.ts`, `ui.tsx`, and `billHtml.ts` (adapt, do not fork logic)
+- `shared/src` to `src/lib`: `billing`, `ledger`, `money`, `quantity`, `dates`, `i18n`, `mr`, `templates` unchanged; `whatsappNumber`/`whatsappUrl` from `messages` into `whatsapp.ts` (buyer-voiced builders not copied). `mr.ts` still holds household-app entries; prune in later phases
+- `shared/test` to `test/`: billing, i18n, templates, pause, sheet (i18n adapted: no message-builder test, no leftover-key test, scans this repo); wa.me cases in `whatsapp.test.ts`
+- `mobile/src` to `src/ui`: `theme.ts`, `ui.tsx` (import paths only). `billHtml.ts` NOT copied yet (it imports the household `db` Settings type); Phase 5 copies and adapts it (do not fork logic)
+- `mobile/assets` (icons, fonts) copied as is
 
 There is no automatic sync. A fix made in one project must be applied by hand to the other if it applies there.
 
 ## Open item
 
-Application ID. The household app uses `app.milkdiary` / scheme `milkdiary`. Proposed here: `app.milkdiary.provider`, scheme `milkdiaryprovider`. Confirm with the owner before Phase 1.
+Application ID confirmed by the owner: `app.milkdiary.provider`, scheme `milkdiaryprovider`, display name "MilkDiary Provider" (household app uses `app.milkdiary` / `milkdiary`).
 
 ## Design tokens
 

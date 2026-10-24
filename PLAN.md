@@ -1,6 +1,6 @@
 # MilkDiary (milk provider app): Plan
 
-Status: **design review. Do not implement until the owner approves.**
+Status: **approved. Implementation follows the phase order below.**
 
 ## 1. Context
 
@@ -73,7 +73,7 @@ New code in `src/lib`: `sellerMessages.ts` with seller-voiced `customerBillMessa
 
 Each phase ends in a runnable, verified state. Stop for owner review between phases.
 
-### Phase 0: Documentation and design review (current)
+### Phase 0: Documentation and design review
 `PLAN.md`, `DEVELOPMENT.md`, then a presentation with every UI flow as phone frames (390x844, styled with the household design tokens: navy `#0F2A4A`, blue `#2563A8`, milk `#F7F5EE`, butter `#F2C14E`, Nunito 800 / Hanken Grotesk). Exit: owner approves flows.
 
 ### Phase 1: Foundation
