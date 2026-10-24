@@ -179,11 +179,20 @@ export function billHtml(bill: MonthBill, types: MilkType[], settings: BillHeade
   })
 }
 
+export type BillStatusKind = 'paid' | 'part' | 'unpaid'
+
+/** Where a bill stands, or null when there is nothing to pay. */
+export function billStatus(bill: MonthBill, paid?: LedgerMonth): BillStatusKind | null {
+  if (bill.payablePaise === 0) return null
+  if (paid && paid.final && paid.duePaise <= 0) return 'paid'
+  return paid && paid.paidPaise > 0 ? 'part' : 'unpaid'
+}
+
+export const statusText = (status: BillStatusKind): string => (status === 'paid' ? tr('Fully paid') : status === 'part' ? tr('Part paid') : tr('Unpaid'))
+
 function statusBadge(bill: MonthBill, paid?: LedgerMonth): string {
-  if (bill.payablePaise === 0) return ''
-  const done = paid && paid.final && paid.duePaise <= 0
-  const part = paid && paid.paidPaise > 0
-  return `<span class="badge ${done ? 'paid' : 'due'}">${done ? tr('Fully paid') : part ? tr('Part paid') : tr('Unpaid')}</span>`
+  const status = billStatus(bill, paid)
+  return status ? `<span class="badge ${status === 'paid' ? 'paid' : 'due'}">${statusText(status)}</span>` : ''
 }
 
 const foot = () => `<div class="foot">${tr('Thank you!')}</div>`

@@ -109,3 +109,12 @@ export function billWhatsApp(month: IsoMonth, row: BillRow, customer: BillCustom
 export function sendAllQueue(rows: BillRow[]): BillRow[] {
   return rows.filter((r) => r.payablePaise > 0)
 }
+
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+/** `MilkBill-October-2026-Asha-Patil`, without extension: safe to use as a file name in any language. */
+export function billFileName(month: IsoMonth, customerName: string): string {
+  const [year, mm] = month.split('-')
+  const who = customerName.replace(/[^\p{L}\p{M}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '') || 'Customer'
+  return `MilkBill-${MONTH_NAMES[Number(mm) - 1]}-${year}-${who}`
+}
