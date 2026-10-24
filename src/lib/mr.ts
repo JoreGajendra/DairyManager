@@ -307,6 +307,7 @@ export const MR: Record<string, string> = {
   'Add {name}': '{name} जोडा',
   'Change {name}': '{name} बदला',
   'Days before this date keep their old quantity and rate.': 'या तारखेआधीचे दिवस जुने प्रमाण आणि दर राखतात.',
+  'Stop this milk': 'हे दूध बंद करा',
   'Month calendar': 'महिन्याचे कॅलेंडर',
   'Delete this pause?': 'हा बंद कालावधी हटवायचा?',
   'Those days will bill at the normal plan again.': 'ते दिवस पुन्हा नेहमीच्या ठरल्याप्रमाणे बिलात येतील.',

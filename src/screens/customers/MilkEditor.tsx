@@ -37,16 +37,11 @@ export function MilkEditor({
   const [error, setError] = useState<string | null>(null)
   const { busy, guard } = useGuard()
 
-  const save = () => guard(async () => {
+  const run = (write: (from: IsoDate) => Promise<void>) => guard(async () => {
     setError(null)
-    const newQty = mlFromText(qty)
-    const newRate = paiseFromText(rate)
-    if (newQty === null) return setError(tr('Enter litres for {name}.', { name }))
-    if (newRate === null) return setError(tr('Enter a rate for {name}.', { name }))
     if (!from) return setError(tr('Pick a valid date.'))
     try {
-      if (isNew || newQty !== qtyMl) await setPlan(customerId, milkTypeId, from, newQty)
-      if (isNew || newRate !== paisePerLitre) await setRate(customerId, milkTypeId, from, newRate)
+      await write(from)
       notify(tr('Saved'))
       onDone()
     } catch (e) {
@@ -55,6 +50,20 @@ export function MilkEditor({
       notify(text, 'error')
     }
   })
+
+  const save = () => {
+    const newQty = mlFromText(qty)
+    const newRate = paiseFromText(rate)
+    if (newQty === null) return setError(tr('Enter litres for {name}.', { name }))
+    if (newRate === null) return setError(tr('Enter a rate for {name}.', { name }))
+    return run(async (date) => {
+      if (isNew || newQty !== qtyMl) await setPlan(customerId, milkTypeId, date, newQty)
+      if (isNew || newRate !== paisePerLitre) await setRate(customerId, milkTypeId, date, newRate)
+    })
+  }
+
+  // Stopping a milk is a plan of 0 L from the date; the rate and history stay.
+  const stop = () => run((date) => setPlan(customerId, milkTypeId, date, 0))
 
   return (
     <Card style={{ marginTop: space(3) }}>
@@ -75,6 +84,9 @@ export function MilkEditor({
         <Button variant="quiet" onPress={onCancel} style={{ flex: 1 }}>{tr('Cancel')}</Button>
         <Button onPress={save} disabled={busy} style={{ flex: 1 }}>{tr('Save')}</Button>
       </View>
+      {isNew || qtyMl === 0 ? null : (
+        <Button variant="quiet" onPress={stop} disabled={busy} style={{ marginTop: space(2) }}>{tr('Stop this milk')}</Button>
+      )}
     </Card>
   )
 }
