@@ -174,6 +174,46 @@ describe('schema and backup', () => {
     }
     expect((d2.prepare('SELECT COUNT(*) n FROM customer').get() as { n: number }).n).toBe(1)
   })
+  it('restores every table exactly, replacing what was there (as importBackupJson does)', () => {
+    const d = open()
+    d.exec(`INSERT INTO milk_type (id,name,sort,active,default_paise_per_litre) VALUES (1,'Cow',1,1,6000),(2,'म्हैस',2,0,8050);
+      INSERT INTO customer (id,name,phone,address,route_order,active,created_on) VALUES (1,'रामू','9876543210','Gali 1',2,1,'2026-01-01'),(2,'Sita','','',1,0,'2026-02-01');
+      INSERT INTO rate VALUES (1,1,'2026-01-01',6000),(1,1,'2026-03-01',6400),(2,2,'2026-02-01',8050);
+      INSERT INTO plan VALUES (1,1,'2026-01-01',1500),(1,1,'2026-03-01',0),(2,2,'2026-02-01',500);
+      INSERT INTO day_entry VALUES (1,'2026-01-05',1,2000),(1,'2026-01-06',1,0);
+      INSERT INTO pause (id,customer_id,from_date,resume_on) VALUES (1,1,'2026-01-10','2026-01-15'),(2,1,'2026-02-01',NULL);
+      INSERT INTO payment (id,customer_id,paid_on,amount_paise,note) VALUES (1,1,'2026-02-02',500000,'cash "part"'),(2,2,'2026-02-03',1,'');
+      INSERT INTO payment_month VALUES (1,'2026-01',300000),(1,'2026-02',200000);
+      INSERT INTO credit_use (id,customer_id,month,amount_paise,used_on) VALUES (1,1,'2026-03',1000,'2026-03-02');
+      INSERT INTO tick VALUES (1,'2026-01-05'),(2,'2026-02-05');
+      INSERT INTO setting VALUES ('language','mr'),('businessName','Gokul Dairy'),('businessPhone','9000000000');`)
+    const dump = (db: DatabaseSync) =>
+      Object.fromEntries(BACKUP_ORDER.map((t) => [t, db.prepare(`SELECT ${Object.keys(BACKUP_TABLES[t]).join(',')} FROM ${t} ORDER BY 1,2`).all().map((r) => ({ ...r }))]))
+    const before = dump(d)
+    // Every table has data, so the comparison below means something.
+    for (const t of BACKUP_ORDER) expect((before[t] as unknown[]).length, t).toBeGreaterThan(0)
+
+    const text = JSON.stringify(serialiseBackup(before as never, MIGRATIONS.length, '2026-04-01T00:00:00Z'))
+    const back = parseBackup(text, MIGRATIONS.length)
+
+    // A phone with different data on it, restored into.
+    const target = open()
+    target.exec(`INSERT INTO milk_type (id,name) VALUES (9,'Old');
+      INSERT INTO customer (id,name,created_on) VALUES (9,'Old','2025-01-01');
+      INSERT INTO payment (id,customer_id,paid_on,amount_paise) VALUES (9,9,'2025-01-02',100);
+      INSERT INTO payment_month VALUES (9,'2025-01',100);
+      INSERT INTO setting VALUES ('language','en'),('stale','x');`)
+    for (const t of [...BACKUP_ORDER].reverse()) target.exec(`DELETE FROM ${t}`)
+    for (const t of BACKUP_ORDER) {
+      const cols = Object.keys(BACKUP_TABLES[t])
+      const ins = target.prepare(`INSERT INTO ${t} (${cols.join(',')}) VALUES (${cols.map(() => '?').join(',')})`)
+      for (const row of back.tables[t]) ins.run(...cols.map((c) => row[c] ?? null))
+    }
+    expect(dump(target)).toEqual(before)
+    // The next new row after a restore gets an unused id.
+    target.exec(`INSERT INTO customer (name,created_on) VALUES ('New','2026-04-01')`)
+    expect((target.prepare('SELECT MAX(id) m FROM customer').get() as { m: number }).m).toBeGreaterThan(2)
+  })
   it('rejects bad backups', () => {
     const good = serialiseBackup({}, MIGRATIONS.length, 'x')
     expect(() => parseBackup('nope', 1)).toThrow()

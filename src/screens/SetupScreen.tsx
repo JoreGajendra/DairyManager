@@ -126,7 +126,16 @@ export function SetupScreen({ onLanguageChange }: { onLanguageChange?: (lang: La
 
       <View style={{ height: space(4) }} />
 
-      <BackupSection onRestored={() => void reload()} />
+      <BackupSection
+        onRestored={() =>
+          // A backup carries its own language: apply it app-wide, not just on this screen.
+          void loadSetup().then((s) => {
+            setLang(s.settings.language)
+            onLanguageChange?.(s.settings.language)
+            return reload()
+          })
+        }
+      />
     </ScrollView>
   )
 }
