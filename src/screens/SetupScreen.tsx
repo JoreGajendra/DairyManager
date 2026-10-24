@@ -11,7 +11,7 @@ import { BackupSection } from './setup/BackupSection'
 import { MilkTypesSection } from './setup/MilkTypesSection'
 
 /** Setup tab: business details, language, milk types, rate changes and backup. */
-export function SetupScreen({ onLanguageChange }: { onLanguageChange?: (lang: Lang) => void }) {
+export function SetupScreen({ onLanguageChange, onBusinessSaved }: { onLanguageChange?: (lang: Lang) => void; onBusinessSaved?: () => void }) {
   const [bulkOpen, setBulkOpen] = useState(false)
   const [setup, setSetup] = useState<Setup | null>(null)
   const [name, setName] = useState('')
@@ -41,6 +41,7 @@ export function SetupScreen({ onLanguageChange }: { onLanguageChange?: (lang: La
     try {
       await saveSettings({ businessName: name, businessPhone: phone })
       setError(null)
+      onBusinessSaved?.()
       notify(tr('Details saved'))
     } catch (e) {
       const text = e instanceof Error ? e.message : String(e)
@@ -71,8 +72,8 @@ export function SetupScreen({ onLanguageChange }: { onLanguageChange?: (lang: La
       {error ? <ErrorNote>{error}</ErrorNote> : null}
 
       <Card>
-        <Label>{tr('Your business')}</Label>
-        <Field label={tr('Business name')} value={name} onChangeText={setName} hint={tr('Shown on bills and messages.')} />
+        <Label style={{ marginBottom: space(2) }}>{tr('Your business')}</Label>
+        <Field label={tr('Name')} value={name} onChangeText={setName} hint={tr('Shown at the top of the app, on bills and in messages.')} />
         <Field label={tr('Phone')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={15} />
         <Button disabled={saveGuard.busy} onPress={() => void saveGuard.guard(saveBusiness)}>{tr('Save')}</Button>
       </Card>

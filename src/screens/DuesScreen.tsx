@@ -47,7 +47,7 @@ export function DuesScreen() {
 
   const rows = sortedDues(data.rows, query)
   return (
-    <ScrollView contentContainerStyle={{ padding: space(5), paddingBottom: space(10) }} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={{ padding: space(5), paddingTop: space(2), paddingBottom: space(10) }} keyboardShouldPersistTaps="handled">
       <View style={{ paddingTop: space(1.5), paddingBottom: space(3.5) }}>
         <Title>{tr('Dues')}</Title>
       </View>

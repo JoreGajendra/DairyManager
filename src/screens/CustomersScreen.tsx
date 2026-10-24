@@ -4,7 +4,7 @@ import { tr } from '../lib'
 import { loadSetup } from '../db'
 import type { Setup } from '../db'
 import { C, faint, font, muted, radius, space } from '../ui/theme'
-import { Body, Button, Card, ErrorNote, LoadFailed, Loading, Muted, Title, styles } from '../ui/ui'
+import { Body, Button, Card, ErrorNote, Icon, LoadFailed, Loading, Muted, Title, styles } from '../ui/ui'
 import { CustomerDetail } from './customers/CustomerDetail'
 import { CustomerForm } from './customers/CustomerForm'
 import { filterCustomers } from './customers/customerView'
@@ -45,20 +45,23 @@ export function CustomersScreen() {
   const active = shown.filter((c) => c.active)
   const stopped = shown.filter((c) => !c.active)
 
-  const row = (c: (typeof shown)[number], n?: number) => (
+  const row = (c: (typeof shown)[number], n: number | undefined, last: boolean) => (
     <Pressable
       key={c.id}
       onPress={() => setView({ page: 'detail', id: c.id })}
       accessibilityRole="button"
-      style={{ flexDirection: 'row', alignItems: 'center', gap: space(3), paddingVertical: space(3), borderBottomWidth: 1, borderBottomColor: C.line }}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: space(3), paddingVertical: space(3), borderBottomWidth: last ? 0 : 1, borderBottomColor: C.line }}
     >
       {n === undefined ? null : (
-        <Text style={{ width: 26, fontFamily: font.display, fontSize: 14, color: muted, textAlign: 'right' }}>{n}</Text>
+        <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: C.sky, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontFamily: font.display, fontSize: 13, color: C.blueText }}>{n}</Text>
+        </View>
       )}
       <View style={{ flex: 1 }}>
         <Body style={c.active ? undefined : { color: muted }}>{c.name}</Body>
-        {c.phone || c.address ? <Muted>{[c.phone, c.address].filter(Boolean).join(' - ')}</Muted> : null}
+        {c.phone || c.address ? <Muted>{[c.phone, c.address].filter(Boolean).join(' · ')}</Muted> : null}
       </View>
+      <Icon name="right" size={18} color={muted} />
     </Pressable>
   )
 
@@ -87,11 +90,11 @@ export function CustomersScreen() {
         <Muted>{tr('No customer matches.')}</Muted>
       ) : (
         <>
-          {active.length ? <Card>{active.map((c, i) => row(c, query ? undefined : i + 1))}</Card> : null}
+          {active.length ? <Card style={{ paddingVertical: space(1) }}>{active.map((c, i) => row(c, query ? undefined : i + 1, i === active.length - 1))}</Card> : null}
           {stopped.length ? (
             <View style={{ marginTop: space(4) }}>
               <Muted style={{ marginBottom: space(2) }}>{tr('Stopped')}</Muted>
-              <Card>{stopped.map((c) => row(c))}</Card>
+              <Card style={{ paddingVertical: space(1) }}>{stopped.map((c, i) => row(c, undefined, i === stopped.length - 1))}</Card>
             </View>
           ) : null}
         </>

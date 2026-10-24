@@ -105,7 +105,7 @@ export function BillsScreen() {
         <>
           <Card tone="navy" style={{ marginBottom: space(3) }}>
             <Text style={{ fontFamily: font.body, fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
-              {tr('{count} customers · {qty}', { count: totals.count, qty: litres(totals.litresMl) })}
+              {tr(totals.count === 1 ? '1 customer · {qty}' : '{count} customers · {qty}', { count: totals.count, qty: litres(totals.litresMl) })}
             </Text>
             <Text style={{ fontFamily: font.display, fontSize: 28, color: C.white }}>{inr(totals.payablePaise)}</Text>
             <Text style={{ fontFamily: font.body, fontSize: 13, color: C.butter }}>

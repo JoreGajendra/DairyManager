@@ -5,13 +5,14 @@ import { useFonts } from 'expo-font'
 import { StatusBar } from 'expo-status-bar'
 import { getLang, setLang, tr } from './src/lib'
 import type { Lang } from './src/lib'
-import { loadLanguage } from './src/db'
+import { loadLanguage, loadSettings } from './src/db'
 import { Bills } from './src/screens/Bills'
 import { Customers } from './src/screens/Customers'
 import { Dues } from './src/screens/Dues'
 import { Setup } from './src/screens/Setup'
 import { Today } from './src/screens/Today'
 import { C, FONT_FILES, font, muted, space } from './src/ui/theme'
+import { AppHeader } from './src/ui/AppHeader'
 import { Icon, Loading, Notifier } from './src/ui/ui'
 import type { IconName } from './src/ui/ui'
 
@@ -43,6 +44,12 @@ function AppShell() {
   const [fontsLoaded] = useFonts(FONT_FILES)
   const [tab, setTab] = useState<Tab>('today')
   const [lang, setLangState] = useState<Lang | null>(null)
+  const [business, setBusiness] = useState({ name: '', phone: '' })
+
+  const loadBusiness = () =>
+    loadSettings()
+      .then((s) => setBusiness({ name: s.businessName, phone: s.businessPhone }))
+      .catch(() => {})
 
   useEffect(() => {
     loadLanguage()
@@ -51,6 +58,10 @@ function AppShell() {
         setLangState(l)
       })
       .catch(() => setLangState(getLang()))
+  }, [])
+
+  useEffect(() => {
+    void loadBusiness()
   }, [])
 
   const changeLanguage = (l: Lang) => {
@@ -67,11 +78,11 @@ function AppShell() {
     return () => subscription.remove()
   }, [tab])
 
-  const screen = { flex: 1, backgroundColor: C.milk, paddingTop: insets.top } as const
+  const screen = { flex: 1, backgroundColor: C.milk } as const
 
   if (!fontsLoaded || !lang) {
     return (
-      <View style={screen}>
+      <View style={[screen, { paddingTop: insets.top }]}>
         <Loading />
       </View>
     )
@@ -79,13 +90,14 @@ function AppShell() {
 
   return (
     <View key={lang} style={screen}>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
+      <AppHeader name={business.name} phone={business.phone} top={insets.top} />
       <View style={{ flex: 1 }}>
         {tab === 'today' && <Today />}
         {tab === 'customers' && <Customers />}
         {tab === 'bills' && <Bills />}
         {tab === 'dues' && <Dues />}
-        {tab === 'setup' && <Setup onLanguageChange={changeLanguage} />}
+        {tab === 'setup' && <Setup onLanguageChange={changeLanguage} onBusinessSaved={() => void loadBusiness()} />}
       </View>
 
       <View
@@ -109,7 +121,9 @@ function AppShell() {
               accessibilityState={{ selected: active }}
               style={{ flex: 1, alignItems: 'center', gap: 3, paddingVertical: space(1) }}
             >
-              <Icon name={t.icon} size={22} color={color} />
+              <View style={{ width: 56, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: active ? C.sky : 'transparent' }}>
+                <Icon name={t.icon} size={22} color={color} />
+              </View>
               <Text style={{ fontFamily: font.body, fontSize: 11, color, fontWeight: active ? '700' : '400' }}>{tr(t.label)}</Text>
             </Pressable>
           )

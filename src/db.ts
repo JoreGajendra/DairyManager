@@ -145,6 +145,10 @@ async function loadRaw(conn: Conn): Promise<Raw> {
   }
 }
 
+export async function loadSettings(): Promise<Settings> {
+  return readSettings(await db())
+}
+
 async function readSettings(conn: Conn): Promise<Settings> {
   const rows = await conn.getAllAsync<{ key: string; value: string }>('SELECT key, value FROM setting')
   const get = (key: string) => rows.find((s) => s.key === key)?.value ?? ''
