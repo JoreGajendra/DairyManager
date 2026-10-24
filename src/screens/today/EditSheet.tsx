@@ -32,6 +32,7 @@ export function EditSheet({
       name: types.find((t) => t.id === i.milkTypeId)?.name ?? '',
       plannedMl: i.plannedMl,
       text: qtyText(i.qtyMl),
+      added: false,
     })),
   )
   const [error, setError] = useState<string | null>(null)
@@ -39,6 +40,10 @@ export function EditSheet({
   const { guard } = useGuard()
 
   const setText = (id: number, text: string) => setLines(lines.map((l) => (l.milkTypeId === id ? { ...l, text } : l)))
+
+  // Any other milk can be given this day too: extra, or instead of the planned one (set that to 0).
+  const addable = types.filter((t) => t.active && !lines.some((l) => l.milkTypeId === t.id))
+  const addMilk = (t: MilkTypeRow) => setLines([...lines, { milkTypeId: t.id, name: t.name, plannedMl: 0, text: qtyText(STEP_ML * 4), added: true }])
 
   const write = (items: { milkTypeId: number; qtyMl: number }[], done: string) =>
     guard(async () => {
@@ -77,10 +82,23 @@ export function EditSheet({
                   onPlus={() => setText(l.milkTypeId, nudgeQty(l.text, STEP_ML, l.plannedMl))}
                   onChangeText={(t) => setText(l.milkTypeId, t)}
                 />
-                <Muted>{tr('Planned {qty}', { qty: litres(l.plannedMl) })}</Muted>
+                <Muted>{l.added ? tr('Not planned') : tr('Planned {qty}', { qty: litres(l.plannedMl) })}</Muted>
               </View>
             </View>
           ))}
+          {addable.length ? (
+            <View style={{ marginBottom: space(4) }}>
+              <Label>{tr('Also deliver')}</Label>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space(2) }}>
+                {addable.map((t) => (
+                  <Button key={t.id} variant="ghost" icon="plus" onPress={() => addMilk(t)}>{t.name}</Button>
+                ))}
+              </View>
+            </View>
+          ) : null}
+          {lines.some((l) => l.added) ? (
+            <Muted style={{ marginBottom: space(3) }}>{tr("Extra milk is priced at this customer's rate, or the milk's default rate if they have none.")}</Muted>
+          ) : null}
           <Body style={{ marginBottom: space(3) }}>{tr('A changed quantity changes the month bill. Ticking does not.')}</Body>
           {error ? <ErrorNote>{error}</ErrorNote> : null}
         </ScrollView>

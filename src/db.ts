@@ -15,6 +15,7 @@ import {
   normaliseDayEntries,
   parseBackup,
   pauseProblem,
+  rateSeedsForDay,
   routeFor,
   serialiseBackup,
 } from './dataHelpers'
@@ -408,13 +409,16 @@ export async function bulkRateChange(input: BulkRateInput & { alsoSetDefault?: b
 export async function saveDay(customerId: number, date: IsoDate, items: { milkTypeId: number; qtyMl: number }[]): Promise<void> {
   const conn = await db()
   await conn.withExclusiveTransactionAsync(async (txn) => {
-    const [plans, pauses] = await Promise.all([
+    const [plans, pauses, rates, types] = await Promise.all([
       txn.getAllAsync<CustomerPlan>(`${SQL.plans} WHERE customer_id = ?`, [customerId]),
       txn.getAllAsync<CustomerPause>(`SELECT id, customer_id AS customerId, from_date AS "from", resume_on AS resumeOn FROM pause WHERE customer_id = ?`, [customerId]),
+      txn.getAllAsync<CustomerRate>(`${SQL.rates} WHERE customer_id = ?`, [customerId]),
+      txn.getAllAsync<{ id: number; defaultPaisePerLitre: number }>('SELECT id, default_paise_per_litre AS defaultPaisePerLitre FROM milk_type'),
     ])
     const writes = normaliseDayEntries(
       items.map((i) => ({ ...i, plannedMl: plannedOn(plans, pauses, i.milkTypeId, date) })),
     )
+    for (const r of rateSeedsForDay(rates, types, writes.upserts, date)) await insertRate(txn, { ...r, customerId })
     for (const id of writes.deletes) {
       await txn.runAsync('DELETE FROM day_entry WHERE customer_id = ? AND date = ? AND milk_type_id = ?', [customerId, date, id])
     }

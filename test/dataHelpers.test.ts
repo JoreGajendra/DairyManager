@@ -7,6 +7,7 @@ import {
   accountOf,
   allDues,
   allocatePayment,
+  billMonth,
   bookOf,
   bulkRateRows,
   checkPayment,
@@ -15,6 +16,7 @@ import {
   normaliseDayEntries,
   parseBackup,
   pauseProblem,
+  rateSeedsForDay,
   routeFor,
   serialiseBackup,
 } from '../src/dataHelpers'
@@ -54,6 +56,45 @@ describe('normaliseDayEntries', () => {
     expect(() => normaliseDayEntries([{ milkTypeId: 1, qtyMl: 10.5, plannedMl: 0 }])).toThrow()
     expect(() => normaliseDayEntries([{ milkTypeId: 1, qtyMl: -1, plannedMl: 0 }])).toThrow()
     expect(() => normaliseDayEntries([{ milkTypeId: 1, qtyMl: 1, plannedMl: 0 }, { milkTypeId: 1, qtyMl: 2, plannedMl: 0 }])).toThrow()
+  })
+})
+
+describe('rateSeedsForDay', () => {
+  const owns = [{ milkTypeId: 1, paisePerLitre: 6500, effectiveFrom: '2026-03-01' }]
+  it('seeds the default rate for a milk the customer has no rate for', () => {
+    const seeds = rateSeedsForDay(owns, types, [{ milkTypeId: 2, qtyMl: 500 }], '2026-03-10')
+    expect(seeds).toEqual([{ milkTypeId: 2, paisePerLitre: 8000, effectiveFrom: '2026-03-10' }])
+  })
+  it('keeps a rate already in force and skips zero quantities', () => {
+    expect(rateSeedsForDay(owns, types, [{ milkTypeId: 1, qtyMl: 2000 }], '2026-03-10')).toEqual([])
+    expect(rateSeedsForDay(owns, types, [{ milkTypeId: 2, qtyMl: 0 }], '2026-03-10')).toEqual([])
+  })
+  it('seeds when the only rate starts after the day', () => {
+    const later = [{ milkTypeId: 2, paisePerLitre: 9000, effectiveFrom: '2026-03-20' }]
+    expect(rateSeedsForDay(later, types, [{ milkTypeId: 2, qtyMl: 500 }], '2026-03-10')).toHaveLength(1)
+  })
+  it('bills extra and replacement milk at the seeded rate', () => {
+    const raw: Raw = {
+      ...empty(),
+      customers: [cust(1)],
+      rates: [{ customerId: 1, milkTypeId: 1, paisePerLitre: 6000, effectiveFrom: '2026-03-01' }],
+      plans: [{ customerId: 1, milkTypeId: 1, qtyMl: 1000, effectiveFrom: '2026-03-01' }],
+      // 10 Mar: Cow replaced by 1 L Buffalo. 11 Mar: 0.5 L Buffalo extra.
+      entries: [
+        { customerId: 1, date: '2026-03-10', milkTypeId: 1, qtyMl: 0 },
+        { customerId: 1, date: '2026-03-10', milkTypeId: 2, qtyMl: 1000 },
+        { customerId: 1, date: '2026-03-11', milkTypeId: 2, qtyMl: 500 },
+      ],
+    }
+    const seeded = {
+      ...raw,
+      rates: [...raw.rates, ...rateSeedsForDay(raw.rates, types, [{ milkTypeId: 2, qtyMl: 1000 }], '2026-03-10').map((r) => ({ ...r, customerId: 1 }))],
+    }
+    const bill = billMonth(bookOf(seeded, 1), types, '2026-03', '2026-03-31')
+    const buffalo = bill.types.find((t) => t.milkTypeId === 2)!
+    expect(buffalo.totalMl).toBe(1500)
+    expect(buffalo.amountPaise).toBe(12000)
+    expect(bill.missingRate).toEqual([])
   })
 })
 

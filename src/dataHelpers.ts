@@ -3,7 +3,7 @@
  * gets written (or what a pile of rows adds up to) lives here so vitest can
  * cover it. Money is whole paise, milk whole millilitres, dates `YYYY-MM-DD`.
  */
-import { addMonths, dateLabel, ledger, monthBill, monthOf, outstanding, pausesOverlap, plannedOn, splitPayment, tr } from './lib';
+import { addMonths, dateLabel, inForce, ledger, monthBill, monthOf, outstanding, pausesOverlap, plannedOn, splitPayment, tr } from './lib';
 import type {
   Allocation,
   CreditUse,
@@ -125,6 +125,25 @@ export function normaliseDayEntries(items: DayItemInput[]): DayWrites {
     else out.upserts.push({ milkTypeId: i.milkTypeId, qtyMl: i.qtyMl })
   }
   return out
+}
+
+/**
+ * Rates to add so milk given on `date` is priced: a milk the customer has no
+ * rate for yet (one-off or replacement milk) starts at the milk's default rate
+ * from that date. A rate already in force is never touched.
+ */
+export function rateSeedsForDay(
+  rates: Rate[],
+  types: { id: number; defaultPaisePerLitre: number }[],
+  upserts: { milkTypeId: number; qtyMl: number }[],
+  date: IsoDate,
+): Rate[] {
+  return upserts
+    .filter((u) => u.qtyMl > 0 && !inForce(rates, u.milkTypeId, date))
+    .flatMap((u) => {
+      const type = types.find((t) => t.id === u.milkTypeId)
+      return type ? [{ milkTypeId: u.milkTypeId, paisePerLitre: type.defaultPaisePerLitre, effectiveFrom: date }] : []
+    })
 }
 
 // --------------------------------------------------------------- rates / plans
