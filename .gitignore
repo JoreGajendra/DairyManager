@@ -4,3 +4,5 @@ android/build
 android/app/build
 dist
 *.log
+
+android/
