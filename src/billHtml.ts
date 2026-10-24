@@ -1,9 +1,10 @@
-import { dateLabel, dayMonthLabel, exceptions, getLang, inr, litreDigits, litres, monthLabel, setLang, tr } from './lib'
+import { dateLabel, dayMonthLabel, exceptions, getLang, inr, litreDigits, litres, monthLabel, setLang, todayIso, tr } from './lib'
 import type { BillDay, IsoDate, Lang, Ledger, LedgerMonth, MilkType, MonthBill, Payment } from './lib'
 import { C } from './ui/theme'
 
 /** Who the bill is from and to, and the language it is written in. Independent of the database. */
 export interface BillHeader {
+  customerId: number
   businessName: string
   businessPhone: string
   customerName: string
@@ -50,8 +51,18 @@ export function sheetQty(day: BillDay, milkTypeId: number, billedThrough: IsoDat
 
 const STYLE = `
   * { margin: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, Roboto, 'Noto Sans Devanagari', 'Segoe UI', sans-serif; color: ${C.ink}; padding: 36px; font-size: 12px; }
-  .brand { font-weight: 800; font-size: 20px; color: ${C.navy}; } .brand b { color: ${C.blueText}; }
+  @page { margin: 0; }
+  body { font-family: -apple-system, Roboto, 'Noto Sans Devanagari', 'Segoe UI', sans-serif; color: ${C.ink}; padding: 0 36px 28px; font-size: 12px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .band { background: ${C.navy}; color: #fff; margin: 0 -36px 22px; padding: 26px 36px 22px; border-bottom: 4px solid ${C.butter}; display: flex; justify-content: space-between; align-items: flex-end; }
+  .bandsub { color: rgba(255,255,255,.75); margin-top: 4px; font-size: 12px; }
+  .bandtitle { font-size: 22px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: ${C.butter}; }
+  .parties { display: flex; justify-content: space-between; gap: 24px; margin-bottom: 20px; line-height: 1.5; }
+  .meta { width: auto; min-width: 220px; } .meta td { border: 0; padding: 2px 0 2px 16px; }
+  .items { margin-top: 14px; } .items th { background: ${C.milk}; border-bottom: 1.5px solid ${C.navy}; padding: 6px 8px; } .items td { padding: 7px 8px; }
+  .badge { display: inline-block; padding: 3px 12px; border-radius: 999px; font-size: 10.5px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; }
+  .paid { background: #DDF3E4; color: #1B6B3A; } .due { background: #FBE7D5; color: #9A4B0E; }
+  .foot { margin-top: 26px; padding-top: 10px; border-top: 1px solid ${C.line}; text-align: center; color: rgba(23,34,51,.6); font-size: 10.5px; }
+  .brand { font-weight: 800; font-size: 24px; color: #fff; } .brand b { color: ${C.butter}; }
   h1 { font-size: 20px; color: ${C.navy}; } h2 { font-size: 16px; color: ${C.navy}; margin-bottom: 8px; }
   .l { font-size: 9.5px; letter-spacing: .4px; text-transform: uppercase; color: rgba(23,34,51,.6); margin-bottom: 2px; }
   .m { color: rgba(23,34,51,.6); }
@@ -68,16 +79,21 @@ const STYLE = `
 
 const page = (body: string) => `<!doctype html><html><head><meta charset="utf-8"><style>${STYLE}</style></head><body>${body}</body></html>`
 
-function head(title: string, subtitle: string, settings: BillHeader): string {
+/** `MD-202610-007`: the month and the customer, so the same bill always has the same number. */
+export const billRef = (month: string, customerId: number): string => `MD-${month.replace('-', '')}-${String(customerId).padStart(3, '0')}`
+
+/** Navy band with the business, then who the bill is to and its reference, period and issue date. */
+function head(title: string, period: string, ref: string, settings: BillHeader, status = ''): string {
   const name = settings.businessName.trim()
-  const party = (label: string, lines: string[], align: string) => {
-    const shown = lines.map((l) => l.trim()).filter(Boolean)
-    return shown.length ? `<div style="text-align:${align}"><div class="l">${label}</div>${shown.map(esc).join('<br>')}</div>` : '<div></div>'
-  }
-  return `<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px">
-    <div class="brand">${name ? esc(name) : 'milk<b>diary</b>'}</div>
-    <div style="text-align:right"><h1>${title}</h1><div class="m">${subtitle}</div></div></div>
-  <div style="display:flex;justify-content:space-between;margin-bottom:16px">${party(tr('From'), [settings.businessPhone], 'left')}${party(tr('To'), [settings.customerName, settings.customerPhone, settings.customerAddress], 'right')}</div>`
+  const phone = settings.businessPhone.trim()
+  const lines = (parts: string[]) => parts.map((l) => l.trim()).filter(Boolean).map(esc).join('<br>')
+  const meta = (label: string, value: string) => `<tr><td class="m">${label}</td><td class="r b">${value}</td></tr>`
+  return `<div class="band">
+    <div><div class="brand">${name ? esc(name) : 'milk<b>diary</b>'}</div>${phone ? `<div class="bandsub">${tr('Phone')} ${esc(phone)}</div>` : ''}</div>
+    <div class="bandtitle">${title}</div></div>
+  <div class="parties">
+    <div><div class="l">${tr('Bill to')}</div><div class="b" style="font-size:14px">${esc(settings.customerName)}</div>${lines([settings.customerPhone, settings.customerAddress])}</div>
+    <table class="meta">${meta(tr('Bill no'), ref)}${meta(tr('Period'), period)}${meta(tr('Issued'), dateLabel(todayIso()))}${status ? meta(tr('Status'), status) : ''}</table></div>`
 }
 
 /** One month in the sheet layout, with its amount lines and the days that were different. */
@@ -129,9 +145,11 @@ function monthSection(bill: MonthBill, types: MilkType[], notes: Record<IsoDate,
     .map(([, row]) => row)
     .join('')
   const totalMl = shown.reduce((s, t) => s + t.totalMl, 0)
-  return `<div class="sheet">${half(bill.days.slice(0, 16))}${half(bill.days.slice(16))}</div>
-    <table><tr><td class="b">${tr('Total qty')}</td><td class="r b">${litres(totalMl)}</td><td></td></tr>${lines}${roundOff}</table>
+  return `<table class="items"><tr><th>${tr('Item')}</th><th class="r">${tr('Qty')} × ${tr('Rate')}</th><th class="r">${tr('Amount')}</th></tr>${lines}${roundOff}
+      <tr><td class="b">${tr('Total qty')}</td><td class="r b">${litres(totalMl)}</td><td></td></tr></table>
     <div class="total"><div class="l">${tr('Total bill amount')}</div><div class="fig">${inr(bill.payablePaise)}</div></div>
+    <div class="l" style="margin:20px 0 6px">${tr('Delivery record')}</div>
+    <div class="sheet">${half(bill.days.slice(0, 16))}${half(bill.days.slice(16))}</div>
     ${different ? `<div class="l" style="margin:14px 0 4px">${tr('Days that were different')}</div><table>${different}</table>` : ''}`
 }
 
@@ -151,9 +169,24 @@ function paidLine(row: LedgerMonth | undefined): string {
 export function billHtml(bill: MonthBill, types: MilkType[], settings: BillHeader, notes: Record<IsoDate, string>, paid?: LedgerMonth): string {
   return inLang(settings.lang, () => {
     const through = bill.complete ? '' : bill.billedThrough ? ` · ${tr('to {date}', { date: dayMonthLabel(bill.billedThrough) })}` : ` · ${tr('not started')}`
-    return page(head(tr('Milk bill'), `${monthLabel(bill.month)}${through}`, settings) + monthSection(bill, types, notes) + paidLine(paid))
+    const badge = statusBadge(bill, paid)
+    return page(
+      head(tr('Milk bill'), `${monthLabel(bill.month)}${through}`, billRef(bill.month, settings.customerId), settings, badge) +
+        monthSection(bill, types, notes) +
+        paidLine(paid) +
+        foot(),
+    )
   })
 }
+
+function statusBadge(bill: MonthBill, paid?: LedgerMonth): string {
+  if (bill.payablePaise === 0) return ''
+  const done = paid && paid.final && paid.duePaise <= 0
+  const part = paid && paid.paidPaise > 0
+  return `<span class="badge ${done ? 'paid' : 'due'}">${done ? tr('Fully paid') : part ? tr('Part paid') : tr('Unpaid')}</span>`
+}
+
+const foot = () => `<div class="foot">${tr('Thank you!')}</div>`
 
 /**
  * A payment receipt for the provider: amount, date, the months it is for, the
@@ -185,7 +218,7 @@ export function receiptHtml(
       .map((b) => `<div class="month" style="page-break-before:always"><h2>${monthLabel(b.month)}</h2>${monthSection(b, types, notes)}</div>`)
       .join('')
     return page(
-      head(tr('Payment'), dateLabel(payment.paidOn), settings) +
+      head(tr('Payment'), dateLabel(payment.paidOn), `PR-${String(payment.id).padStart(4, '0')}`, settings) +
         `<div class="total" style="border-top:0;padding-top:0"><div><div class="l">${tr('Paid')}</div>${payment.note ? esc(payment.note) : ''}</div><div class="fig">${inr(payment.amountPaise)}</div></div>
       <table style="margin-top:14px"><tr><th>${tr('For')}</th><th class="r">${tr('Bill')}</th><th class="r">${tr('Paid now')}</th><th></th></tr>${rows}</table>
       <div class="total" style="margin-top:14px"><div class="l">${tr('Still to pay on finished months')}</div><div class="fig" style="font-size:18px">${inr(ledger.duePaise)}</div></div>` +
@@ -219,6 +252,6 @@ export function statementHtml(
       ? `<div class="l" style="margin:10px 0 4px">${tr('Last payments')}</div><table>${recent.map((p) => `<tr><td>${dateLabel(p.paidOn)}</td><td class="r">${inr(p.amountPaise)}</td><td class="m">${esc(p.note)}</td></tr>`).join('')}</table>`
       : ''
     const months = bills.map((b) => `<div class="month"><h2>${monthLabel(b.month)}</h2>${monthSection(b, types, notes)}</div>`).join('')
-    return page(head(tr('Milk statement'), range, settings) + summary + paid + `<div style="margin-top:28px">${months}</div>`)
+    return page(head(tr('Milk statement'), range, `ST-${String(settings.customerId).padStart(3, '0')}`, settings) + summary + paid + `<div style="margin-top:28px">${months}</div>` + foot())
   })
 }

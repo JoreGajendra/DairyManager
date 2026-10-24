@@ -24,6 +24,7 @@ export interface BillSettings {
 /** Who a bill is from and to, in the saved language. */
 export function billHeader(settings: BillSettings, customer: BillCustomer): BillHeader {
   return {
+    customerId: customer.id,
     businessName: settings.businessName.trim(),
     businessPhone: settings.businessPhone.trim(),
     customerName: customer.name.trim(),

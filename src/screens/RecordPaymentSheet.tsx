@@ -133,6 +133,7 @@ export function RecordPaymentSheet({ customerId, onDone, onClose }: { customerId
       setError(null)
       try {
         const header = {
+          customerId: customer.id,
           businessName: business,
           businessPhone: setup.settings.businessPhone,
           customerName: customer.name,
