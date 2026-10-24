@@ -86,6 +86,7 @@ export function CustomerDetail({ customerId, onBack }: { customerId: number; onB
   const order = setup.customers.map((c) => c.id)
   const position = order.indexOf(customer.id)
   const bill = monthData.bill
+  const billed = bill.types.filter((t) => t.totalMl > 0)
 
   const act = (action: () => Promise<void>, done: string) =>
     guard(async () => {
@@ -138,8 +139,8 @@ export function CustomerDetail({ customerId, onBack }: { customerId: number; onB
       <View style={{ height: space(4) }} />
       <Card>
         <Label>{tr('Bill for {month}', { month: monthLabel(month) })}</Label>
-        {bill.types.length === 0 ? <Muted>{tr('No milk this month.')}</Muted> : null}
-        {bill.types.map((t) => (
+        {billed.length === 0 ? <Muted>{tr('No milk this month.')}</Muted> : null}
+        {billed.map((t) => (
           <Row key={t.milkTypeId} label={`${t.name}  ${litres(t.totalMl)}`}>
             <Body>{inr(t.amountPaise)}</Body>
           </Row>
