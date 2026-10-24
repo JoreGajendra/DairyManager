@@ -3,7 +3,9 @@ import { BackHandler, Pressable, Text, View } from 'react-native'
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFonts } from 'expo-font'
 import { StatusBar } from 'expo-status-bar'
-import { tr } from './src/lib'
+import { getLang, setLang, tr } from './src/lib'
+import type { Lang } from './src/lib'
+import { loadLanguage } from './src/db'
 import { Bills } from './src/screens/Bills'
 import { Customers } from './src/screens/Customers'
 import { Dues } from './src/screens/Dues'
@@ -40,6 +42,21 @@ function AppShell() {
   const insets = useSafeAreaInsets()
   const [fontsLoaded] = useFonts(FONT_FILES)
   const [tab, setTab] = useState<Tab>('today')
+  const [lang, setLangState] = useState<Lang | null>(null)
+
+  useEffect(() => {
+    loadLanguage()
+      .then((l) => {
+        setLang(l)
+        setLangState(l)
+      })
+      .catch(() => setLangState(getLang()))
+  }, [])
+
+  const changeLanguage = (l: Lang) => {
+    setLang(l)
+    setLangState(l)
+  }
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -52,7 +69,7 @@ function AppShell() {
 
   const screen = { flex: 1, backgroundColor: C.milk, paddingTop: insets.top } as const
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded || !lang) {
     return (
       <View style={screen}>
         <Loading />
@@ -61,14 +78,14 @@ function AppShell() {
   }
 
   return (
-    <View style={screen}>
+    <View key={lang} style={screen}>
       <StatusBar style="dark" />
       <View style={{ flex: 1 }}>
         {tab === 'today' && <Today />}
         {tab === 'customers' && <Customers />}
         {tab === 'bills' && <Bills />}
         {tab === 'dues' && <Dues />}
-        {tab === 'setup' && <Setup />}
+        {tab === 'setup' && <Setup onLanguageChange={changeLanguage} />}
       </View>
 
       <View

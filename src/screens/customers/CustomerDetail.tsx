@@ -6,6 +6,7 @@ import { deactivateCustomer, loadCustomer, loadMonth, reactivateCustomer, setRou
 import type { CustomerData, MonthData } from '../../db'
 import { C, font, space } from '../../ui/theme'
 import { Body, Button, Card, DateChoice, ErrorNote, Header, Label, Loading, Muted, MonthBar, Row, notify, useBack } from '../../ui/ui'
+import { RecordPaymentSheet } from '../RecordPaymentSheet'
 import { CustomerForm } from './CustomerForm'
 import { MilkEditor } from './MilkEditor'
 import { MonthCalendar } from './MonthCalendar'
@@ -22,6 +23,7 @@ export function CustomerDetail({ customerId, onBack }: { customerId: number; onB
   const [missing, setMissing] = useState(false)
   const [editing, setEditing] = useState<Editing>(null)
   const [form, setForm] = useState(false)
+  const [paying, setPaying] = useState(false)
   const [stopping, setStopping] = useState(false)
   const [stopFrom, setStopFrom] = useState<IsoDate | null>(todayIso())
   const [error, setError] = useState<string | null>(null)
@@ -160,7 +162,22 @@ export function CustomerDetail({ customerId, onBack }: { customerId: number; onB
       </Card>
 
       <View style={{ height: space(4) }} />
-      {/* TODO(phase 6): payments section here (balance, payment list, "Record payment" opens RecordPaymentSheet). */}
+      <Card>
+        <Label>{tr('Payments')}</Label>
+        <Button onPress={() => setPaying(true)}>{tr('Record payment')}</Button>
+      </Card>
+      {paying ? (
+        <RecordPaymentSheet
+          customerId={customerId}
+          onClose={() => setPaying(false)}
+          onDone={() => {
+            setPaying(false)
+            void reload()
+          }}
+        />
+      ) : null}
+
+      <View style={{ height: space(4) }} />
 
       <Card>
         <Label>{tr('Milk and rates')}</Label>

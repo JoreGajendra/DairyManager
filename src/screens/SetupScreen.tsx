@@ -6,11 +6,13 @@ import { loadSetup, saveLanguage, saveSettings } from '../db'
 import type { Setup } from '../db'
 import { C, font, radius, space } from '../ui/theme'
 import { Button, Card, ErrorNote, Field, Label, Loading, Title, notify } from '../ui/ui'
+import { BulkRateSheet } from './BulkRateSheet'
 import { BackupSection } from './setup/BackupSection'
 import { MilkTypesSection } from './setup/MilkTypesSection'
 
 /** Setup tab: business details, language, milk types, rate changes and backup. */
-export function SetupScreen() {
+export function SetupScreen({ onLanguageChange }: { onLanguageChange?: (lang: Lang) => void }) {
+  const [bulkOpen, setBulkOpen] = useState(false)
   const [setup, setSetup] = useState<Setup | null>(null)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -51,6 +53,7 @@ export function SetupScreen() {
       await saveLanguage(next)
       setLang(next)
       setLangState(next)
+      onLanguageChange?.(next)
       notify(tr('Language saved'))
     } catch (e) {
       notify(e instanceof Error ? e.message : String(e), 'error')
@@ -106,7 +109,21 @@ export function SetupScreen() {
       <MilkTypesSection types={setup.types} onChanged={() => void reload()} />
 
       <View style={{ height: space(4) }} />
-      {/* TODO(phase 6): "Change rate from date" row here; it opens BulkRateSheet (src/screens/BulkRateSheet.tsx). */}
+      <Card>
+        <Label>{tr('Change rate from a date')}</Label>
+        <Button variant="ghost" onPress={() => setBulkOpen(true)}>{tr('Change rate')}</Button>
+      </Card>
+      {bulkOpen ? (
+        <BulkRateSheet
+          onClose={() => setBulkOpen(false)}
+          onDone={() => {
+            setBulkOpen(false)
+            void reload()
+          }}
+        />
+      ) : null}
+
+      <View style={{ height: space(4) }} />
 
       <BackupSection onRestored={() => void reload()} />
     </ScrollView>
