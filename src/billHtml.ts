@@ -1,5 +1,6 @@
-import { dateLabel, dayMonthLabel, exceptions, getLang, inr, litreDigits, litres, monthLabel, setLang, todayIso, tr } from './lib'
+import { dateLabel, dayMonthLabel, exceptions, getLang, inr, litreDigits, litres, monthLabel, setLang, todayIso, tr, weekdayLabel } from './lib'
 import type { BillDay, IsoDate, Lang, Ledger, LedgerMonth, MilkType, MonthBill, Payment } from './lib'
+import { calendarCells } from './screens/customers/customerView'
 import { C } from './ui/theme'
 
 /** Who the bill is from and to, and the language it is written in. Independent of the database. */
@@ -42,13 +43,6 @@ export function changeText(day: BillDay, types: MilkType[]): string {
     .join(', ')
 }
 
-/** What a day shows in the sheet: litres, 0 for no delivery, blank before it happens. */
-export function sheetQty(day: BillDay, milkTypeId: number, billedThrough: IsoDate | null): string {
-  if (billedThrough === null || day.date > billedThrough) return ''
-  const item = day.items.find((i) => i.milkTypeId === milkTypeId)
-  return item ? litreDigits(item.qtyMl) : ''
-}
-
 const STYLE = `
   * { margin: 0; box-sizing: border-box; }
   @page { margin: 0; }
@@ -70,8 +64,8 @@ const STYLE = `
   td, th { padding: 3px 4px; border-bottom: 1px solid ${C.line}; text-align: left; vertical-align: top; }
   th { font-weight: 400; font-size: 9.5px; letter-spacing: .4px; text-transform: uppercase; color: rgba(23,34,51,.6); }
   .r { text-align: right; } .b { font-weight: 700; }
-  .sheet { display: flex; align-items: flex-start; gap: 24px; margin-bottom: 12px; } .sheet > table { flex: 1; }
-  .sheet tr.t td { border-top: 1.5px solid ${C.navy}; border-bottom: 0; font-weight: 700; }
+  .cal { table-layout: fixed; border-collapse: separate; border-spacing: 3px; } .cal th { text-align: center; border: 0; padding: 0 0 2px; }
+  .cal td { height: 38px; text-align: center; vertical-align: middle; border: 0; border-radius: 8px; padding: 2px; line-height: 1.25; } .cal td i { display: block; font-style: normal; font-size: 9px; } .cal td b { font-size: 11.5px; }
   .total { display: flex; justify-content: space-between; align-items: baseline; border-top: 2px solid ${C.navy}; padding-top: 8px; margin-top: 4px; }
   .fig { font-size: 22px; font-weight: 800; color: ${C.navy}; }
   .month { page-break-inside: avoid; margin-bottom: 28px; }
@@ -96,27 +90,39 @@ function head(title: string, period: string, ref: string, settings: BillHeader, 
     <table class="meta">${meta(tr('Bill no'), ref)}${meta(tr('Period'), period)}${meta(tr('Issued'), dateLabel(todayIso()))}${status ? meta(tr('Status'), status) : ''}</table></div>`
 }
 
+const FILL: Record<string, [string, string]> = {
+  plan: [C.sky, C.blueText],
+  changed: [C.amber, C.amberText],
+  none: [C.none, 'rgba(23,34,51,.6)'],
+  off: [C.none, 'rgba(23,34,51,.6)'],
+  paused: [C.paused, C.pausedText],
+  future: [C.white, 'rgba(23,34,51,.6)'],
+}
+
+/** The month as a grid like the Customers calendar: each day's litres, coloured by what happened. */
+function calendarHtml(bill: MonthBill): string {
+  const byDate = new Map(bill.days.map((d) => [d.date, d]))
+  const cells = calendarCells(bill.month)
+  // 2026-10-04 is a Sunday: seven days from it give the week-head labels.
+  const head = ['04', '05', '06', '07', '08', '09', '10'].map((d) => `<th class="l">${weekdayLabel(`2026-10-${d}`)}</th>`).join('')
+  const rows: string[] = []
+  for (let i = 0; i < cells.length; i += 7) {
+    const week = cells.slice(i, i + 7).map((date) => {
+      const day = date ? byDate.get(date) : undefined
+      if (!date || !day) return '<td></td>'
+      const [bg, fg] = FILL[day.status]!
+      const dash = day.status === 'paused' || day.status === 'none' || day.status === 'off'
+      const border = day.status === 'future' ? `border:1px solid ${C.line};` : ''
+      return `<td style="background:${bg};color:${fg};${border}"><i>${Number(date.slice(8))}</i><b>${dash ? '-' : litreDigits(day.totalMl)}</b></td>`
+    })
+    rows.push(`<tr>${week.join('')}</tr>`)
+  }
+  return `<div class="l" style="margin:20px 0 4px">${tr('Delivery record')}</div><table class="cal"><tr>${head}</tr>${rows.join('')}</table>`
+}
+
 /** One month in the sheet layout, with its amount lines and the days that were different. */
 function monthSection(bill: MonthBill, types: MilkType[], notes: Record<IsoDate, string>): string {
   const shown = bill.types.filter((t) => t.totalMl > 0)
-  const cols = shown.length ? shown : bill.types
-  const half = (days: BillDay[]) => {
-    const heads = cols.map((t) => `<th class="r">${cols.length > 1 ? esc(t.name) : tr('Qty')}</th>`).join('')
-    const rows = days
-      .map(
-        (d) => `<tr><td>${Number(d.date.slice(8))}</td>${cols.map((t) => `<td class="r">${sheetQty(d, t.milkTypeId, bill.billedThrough)}</td>`).join('')}</tr>`,
-      )
-      .join('')
-    const totals = cols
-      .map((t) => {
-        const ml = days
-          .filter((d) => bill.billedThrough !== null && d.date <= bill.billedThrough)
-          .reduce((s, d) => s + (d.items.find((i) => i.milkTypeId === t.milkTypeId)?.qtyMl ?? 0), 0)
-        return `<td class="r">${litreDigits(ml)}</td>`
-      })
-      .join('')
-    return `<table><tr><th>${tr('Date')}</th>${heads}</tr>${rows}<tr class="t"><td>${tr('Total')}</td>${totals}</tr></table>`
-  }
   const lines = shown
     .flatMap((t) =>
       t.periods.map(
@@ -148,8 +154,7 @@ function monthSection(bill: MonthBill, types: MilkType[], notes: Record<IsoDate,
   return `<table class="items"><tr><th>${tr('Item')}</th><th class="r">${tr('Qty')} × ${tr('Rate')}</th><th class="r">${tr('Amount')}</th></tr>${lines}${roundOff}
       <tr><td class="b">${tr('Total qty')}</td><td class="r b">${litres(totalMl)}</td><td></td></tr></table>
     <div class="total"><div class="l">${tr('Total bill amount')}</div><div class="fig">${inr(bill.payablePaise)}</div></div>
-    <div class="l" style="margin:20px 0 6px">${tr('Delivery record')}</div>
-    <div class="sheet">${half(bill.days.slice(0, 16))}${half(bill.days.slice(16))}</div>
+    ${calendarHtml(bill)}
     ${different ? `<div class="l" style="margin:14px 0 4px">${tr('Days that were different')}</div><table>${different}</table>` : ''}`
 }
 

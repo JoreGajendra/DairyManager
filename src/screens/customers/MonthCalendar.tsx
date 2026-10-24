@@ -19,8 +19,8 @@ const HEAD_DATES = ['04', '05', '06', '07', '08', '09', '10'].map((d) => `2026-1
 /** A day can be edited when some milk is planned or was entered for it. */
 export const dayEditable = (day: BillDay): boolean => day.items.some((i) => i.plannedMl > 0 || i.qtyMl > 0)
 
-/** The month as a grid: each day's litres, coloured by what happened (plan, changed, none, paused, to come). Tap an editable day to change it. */
-export function MonthCalendar({ month, days, onPickDay }: { month: IsoMonth; days: BillDay[]; onPickDay: (day: BillDay) => void }) {
+/** The month as a grid: each day's litres, coloured by what happened (plan, changed, none, paused, to come). Give `onPickDay` to make editable days tappable. */
+export function MonthCalendar({ month, days, onPickDay }: { month: IsoMonth; days: BillDay[]; onPickDay?: (day: BillDay) => void }) {
   const byDate = new Map(days.map((d) => [d.date, d]))
   const cells = calendarCells(month)
   const weeks: (typeof cells)[] = []
@@ -45,8 +45,8 @@ export function MonthCalendar({ month, days, onPickDay }: { month: IsoMonth; day
             return (
               <Pressable
                 key={i}
-                disabled={!dayEditable(day)}
-                onPress={() => onPickDay(day)}
+                disabled={!onPickDay || !dayEditable(day)}
+                onPress={() => onPickDay?.(day)}
                 accessibilityRole="button"
                 accessibilityLabel={dateLabel(date)}
                 style={{

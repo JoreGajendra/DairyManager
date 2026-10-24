@@ -1,9 +1,10 @@
 import { Text, View } from 'react-native'
-import { dateLabel, dayMonthLabel, exceptions, inr, litreDigits, litres, monthLabel, todayIso, tr } from '../../lib'
-import type { BillDay, IsoMonth, LedgerMonth, MonthBill } from '../../lib'
-import { billRef, billStatus, changeText, sheetQty, statusText } from '../../billHtml'
+import { dateLabel, dayMonthLabel, exceptions, inr, litres, monthLabel, todayIso, tr } from '../../lib'
+import type { IsoMonth, LedgerMonth, MonthBill } from '../../lib'
+import { billRef, billStatus, changeText, statusText } from '../../billHtml'
 import type { MilkTypeRow } from '../../dataHelpers'
 import { C, font, muted, space } from '../../ui/theme'
+import { MonthCalendar } from '../customers/MonthCalendar'
 import { billHeader } from './billsModel'
 import type { BillCustomer, BillSettings } from './billsModel'
 
@@ -33,7 +34,6 @@ export function BillSheet({
 }) {
   const header = billHeader(settings, customer)
   const shown = bill.types.filter((t) => t.totalMl > 0)
-  const cols = shown.length ? shown : bill.types
   const through = bill.complete ? '' : bill.billedThrough ? ` · ${tr('to {date}', { date: dayMonthLabel(bill.billedThrough) })}` : ''
   const status = billStatus(bill, paid)
   const totalMl = shown.reduce((s, t) => s + t.totalMl, 0)
@@ -52,42 +52,6 @@ export function BillSheet({
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: space(4) }}>
       <Text style={{ ...body, color: muted }}>{label}</Text>
       <Text style={bold}>{value}</Text>
-    </View>
-  )
-
-  const half = (days: BillDay[]) => (
-    <View style={{ flex: 1 }}>
-      <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: C.line, paddingVertical: 2 }}>
-        <Text style={{ ...small, width: 28 }}>{tr('Date')}</Text>
-        {cols.map((t) => (
-          <Text key={t.milkTypeId} style={{ ...small, flex: 1, textAlign: 'right' }} numberOfLines={1}>
-            {cols.length > 1 ? t.name : tr('Qty')}
-          </Text>
-        ))}
-      </View>
-      {days.map((d) => (
-        <View key={d.date} style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: C.line, paddingVertical: 2 }}>
-          <Text style={{ ...body, fontSize: 11, width: 28 }}>{Number(d.date.slice(8))}</Text>
-          {cols.map((t) => (
-            <Text key={t.milkTypeId} style={{ ...body, fontSize: 11, flex: 1, textAlign: 'right' }}>
-              {sheetQty(d, t.milkTypeId, bill.billedThrough)}
-            </Text>
-          ))}
-        </View>
-      ))}
-      <View style={{ flexDirection: 'row', borderTopWidth: 1.5, borderTopColor: C.navy, paddingVertical: 3 }}>
-        <Text style={{ ...bold, fontSize: 11, width: 28 }}>{tr('Total')}</Text>
-        {cols.map((t) => {
-          const ml = days
-            .filter((d) => bill.billedThrough !== null && d.date <= bill.billedThrough)
-            .reduce((s, d) => s + (d.items.find((i) => i.milkTypeId === t.milkTypeId)?.qtyMl ?? 0), 0)
-          return (
-            <Text key={t.milkTypeId} style={{ ...bold, fontSize: 11, flex: 1, textAlign: 'right' }}>
-              {litreDigits(ml)}
-            </Text>
-          )
-        })}
-      </View>
     </View>
   )
 
@@ -167,10 +131,7 @@ export function BillSheet({
         ) : null}
 
         <Text style={{ ...small, marginTop: space(5), marginBottom: 6 }}>{tr('Delivery record')}</Text>
-        <View style={{ flexDirection: 'row', gap: space(5), alignItems: 'flex-start' }}>
-          {half(bill.days.slice(0, 16))}
-          {half(bill.days.slice(16))}
-        </View>
+        <MonthCalendar month={month} days={bill.days} />
 
         {different.length ? (
           <View style={{ marginTop: space(4) }}>
