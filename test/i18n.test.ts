@@ -26,6 +26,15 @@ function usedKeys(): Set<string> {
   return keys;
 }
 
+/**
+ * All source text, for the leftover check. A key counts as used when it appears
+ * as a quoted string anywhere in the source, which also covers texts looked up
+ * from tables (tab labels, date choices) and passed to `tr()` as a variable.
+ */
+function sourceText(): string {
+  return [...sources(join(ROOT, 'src')), join(ROOT, 'App.tsx')].map((f) => readFileSync(f, 'utf8')).join('\n');
+}
+
 const holes = (text: string): string[] => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]!).sort();
 // Words the date pickers look up from a table rather than a `tr()` call.
 const TABLE_KEYS = ['1st of this month', '1st of next month', 'Yesterday', 'Today', 'Tomorrow', 'Other date', 'Customers', 'Bills', 'Dues', 'Setup'];
@@ -36,6 +45,12 @@ describe('Marathi', () => {
   it('translates every text the app shows', () => {
     const missing = [...usedKeys(), ...TABLE_KEYS].filter((key) => !MR[key]);
     expect(missing).toEqual([]);
+  });
+
+  it('has no translation left over from text that was removed', () => {
+    const text = sourceText();
+    const quoted = (key: string) => [`'${key.replace(/'/g, "\\'")}'`, `"${key}"`, '`' + key + '`'].some((q) => text.includes(q));
+    expect(Object.keys(MR).filter((key) => !quoted(key))).toEqual([]);
   });
 
   it('keeps the {names} and bold marks of each text', () => {
