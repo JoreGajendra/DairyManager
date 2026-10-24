@@ -4,7 +4,7 @@ import { litreDigits, mlFromText, paiseFromText, todayIso, tr } from '../../lib'
 import type { IsoDate } from '../../lib'
 import { setPlan, setRate } from '../../db'
 import { space } from '../../ui/theme'
-import { Button, Card, DateChoice, ErrorNote, Field, Label, Muted, notify } from '../../ui/ui'
+import { Button, Card, DateChoice, ErrorNote, Field, Label, Muted, notify, useGuard } from '../../ui/ui'
 
 /**
  * Changes one milk of a customer from a date: a new quantity and/or a new rate.
@@ -35,8 +35,9 @@ export function MilkEditor({
   const [rate, setRateText] = useState(paisePerLitre === null ? '' : String(paisePerLitre / 100))
   const [from, setFrom] = useState<IsoDate | null>(todayIso())
   const [error, setError] = useState<string | null>(null)
+  const { busy, guard } = useGuard()
 
-  const save = async () => {
+  const save = () => guard(async () => {
     setError(null)
     const newQty = mlFromText(qty)
     const newRate = paiseFromText(rate)
@@ -53,7 +54,7 @@ export function MilkEditor({
       setError(text)
       notify(text, 'error')
     }
-  }
+  })
 
   return (
     <Card style={{ marginTop: space(3) }}>
@@ -72,7 +73,7 @@ export function MilkEditor({
       {error ? <ErrorNote>{error}</ErrorNote> : null}
       <View style={{ flexDirection: 'row', gap: space(3), marginTop: space(3) }}>
         <Button variant="quiet" onPress={onCancel} style={{ flex: 1 }}>{tr('Cancel')}</Button>
-        <Button onPress={save} style={{ flex: 1 }}>{tr('Save')}</Button>
+        <Button onPress={save} disabled={busy} style={{ flex: 1 }}>{tr('Save')}</Button>
       </View>
     </Card>
   )

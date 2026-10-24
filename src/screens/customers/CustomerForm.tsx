@@ -5,7 +5,7 @@ import type { IsoDate } from '../../lib'
 import { addCustomer, editCustomer } from '../../db'
 import type { Customer, MilkTypeRow } from '../../dataHelpers'
 import { C, font, radius, space } from '../../ui/theme'
-import { Button, Card, DateChoice, ErrorNote, Field, Header, Label, Muted, notify, useBack } from '../../ui/ui'
+import { Button, Card, DateChoice, ErrorNote, Field, Header, Label, Muted, notify, useBack, useGuard } from '../../ui/ui'
 import { emptyDrafts, milksFromDrafts } from './customerView'
 import type { MilkDraft } from './customerView'
 
@@ -31,7 +31,7 @@ export function CustomerForm({
   const [drafts, setDrafts] = useState<MilkDraft[]>(() => emptyDrafts(types))
   const [startDate, setStartDate] = useState<IsoDate | null>(todayIso())
   const [error, setError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
+  const { busy, guard } = useGuard()
 
   useBack(() => {
     onCancel()
@@ -41,10 +41,9 @@ export function CustomerForm({
   const patch = (id: number, change: Partial<MilkDraft>) =>
     setDrafts((all) => all.map((d) => (d.milkTypeId === id ? { ...d, ...change } : d)))
 
-  const save = async () => {
+  const save = () => guard(async () => {
     setError(null)
     if (!name.trim()) return setError(tr('Enter the customer name.'))
-    setBusy(true)
     try {
       if (customer) {
         await editCustomer(customer.id, { name, phone, address })
@@ -63,10 +62,8 @@ export function CustomerForm({
       const text = e instanceof Error ? e.message : String(e)
       setError(text)
       notify(text, 'error')
-    } finally {
-      setBusy(false)
     }
-  }
+  })
 
   return (
     <ScrollView contentContainerStyle={{ padding: space(5), paddingTop: space(2) }} keyboardShouldPersistTaps="handled">

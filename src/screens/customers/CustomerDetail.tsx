@@ -5,7 +5,7 @@ import type { IsoDate, IsoMonth } from '../../lib'
 import { deactivateCustomer, loadCustomer, loadMonth, reactivateCustomer, setRouteOrder } from '../../db'
 import type { CustomerData, MonthData } from '../../db'
 import { C, font, space } from '../../ui/theme'
-import { Body, Button, Card, DateChoice, ErrorNote, Header, Label, Loading, Muted, MonthBar, Row, notify, useBack } from '../../ui/ui'
+import { Body, Button, Card, DateChoice, ErrorNote, Header, Label, LoadFailed, Loading, useGuard, Muted, MonthBar, Row, notify, useBack } from '../../ui/ui'
 import { RecordPaymentSheet } from '../RecordPaymentSheet'
 import { CustomerForm } from './CustomerForm'
 import { MilkEditor } from './MilkEditor'
@@ -27,6 +27,7 @@ export function CustomerDetail({ customerId, onBack }: { customerId: number; onB
   const [stopping, setStopping] = useState(false)
   const [stopFrom, setStopFrom] = useState<IsoDate | null>(todayIso())
   const [error, setError] = useState<string | null>(null)
+  const { guard } = useGuard()
 
   const reload = useCallback(async () => {
     try {
@@ -59,7 +60,7 @@ export function CustomerDetail({ customerId, onBack }: { customerId: number; onB
   if (!data || !monthData) {
     return (
       <View style={{ flex: 1 }}>
-        {error ? <ErrorNote>{error}</ErrorNote> : <Loading />}
+        {error ? <LoadFailed error={error} onRetry={() => { setError(null); void reload() }} /> : <Loading />}
       </View>
     )
   }
@@ -86,18 +87,19 @@ export function CustomerDetail({ customerId, onBack }: { customerId: number; onB
   const position = order.indexOf(customer.id)
   const bill = monthData.bill
 
-  const act = async (action: () => Promise<void>, done: string) => {
-    setError(null)
-    try {
-      await action()
-      notify(done)
-      await reload()
-    } catch (e) {
-      const text = e instanceof Error ? e.message : String(e)
-      setError(text)
-      notify(text, 'error')
-    }
-  }
+  const act = (action: () => Promise<void>, done: string) =>
+    guard(async () => {
+      setError(null)
+      try {
+        await action()
+        notify(done)
+        await reload()
+      } catch (e) {
+        const text = e instanceof Error ? e.message : String(e)
+        setError(text)
+        notify(text, 'error')
+      }
+    })
 
   const move = (delta: -1 | 1) => act(() => setRouteOrder(moveId(order, customer.id, delta)), tr('Route order saved'))
 

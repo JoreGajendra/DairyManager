@@ -5,7 +5,7 @@ import { loadAllDues } from '../db'
 import type { Setup } from '../db'
 import type { AllDues } from '../dataHelpers'
 import { C, faint, font, space } from '../ui/theme'
-import { Card, ErrorNote, Icon, Label, Loading, Muted, Title, styles } from '../ui/ui'
+import { Card, ErrorNote, Icon, Label, LoadFailed, Loading, Muted, Title, styles } from '../ui/ui'
 import { CustomerLedger } from './dues/CustomerLedger'
 import { sortedDues } from './dues/duesLogic'
 
@@ -43,7 +43,7 @@ export function DuesScreen() {
       />
     )
   }
-  if (!data) return error ? <View style={{ padding: space(5) }}><ErrorNote>{error}</ErrorNote></View> : <Loading />
+  if (!data) return error ? <LoadFailed error={error} onRetry={() => { setError(null); void reload() }} /> : <Loading />
 
   const rows = sortedDues(data.rows, query)
   return (

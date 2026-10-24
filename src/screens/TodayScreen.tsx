@@ -6,7 +6,7 @@ import type { RouteStop } from '../dataHelpers'
 import { loadRoute, setTick } from '../db'
 import type { Setup } from '../db'
 import { C, font, muted, space } from '../ui/theme'
-import { Body, Card, ErrorNote, Icon, Loading, Muted, Title, notify, styles } from '../ui/ui'
+import { Body, Card, Icon, LoadFailed, Loading, Muted, Title, notify, styles } from '../ui/ui'
 import { EditSheet } from './today/EditSheet'
 import { StopRow } from './today/StopRow'
 import { progressOf } from './today/todayHelpers'
@@ -78,7 +78,7 @@ export function TodayScreen() {
       </View>
 
       {error ? (
-        <View style={{ padding: space(5) }}><ErrorNote>{error}</ErrorNote></View>
+        <LoadFailed error={error} onRetry={() => { setError(null); void load(date) }} />
       ) : !route ? (
         <Loading />
       ) : total === 0 ? (

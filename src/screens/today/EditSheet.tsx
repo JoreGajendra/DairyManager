@@ -5,7 +5,7 @@ import type { IsoDate } from '../../lib'
 import type { MilkTypeRow, RouteStop } from '../../dataHelpers'
 import { saveDay } from '../../db'
 import { C, space } from '../../ui/theme'
-import { Body, Button, ErrorNote, Label, Muted, Stepper, Title, notify } from '../../ui/ui'
+import { Body, Button, ErrorNote, Label, Muted, Stepper, Title, notify, useGuard } from '../../ui/ui'
 import { STEP_ML, dayItems, notDeliveredItems, nudgeQty, qtyText } from './todayHelpers'
 
 /**
@@ -36,20 +36,22 @@ export function EditSheet({
   )
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const { guard } = useGuard()
 
   const setText = (id: number, text: string) => setLines(lines.map((l) => (l.milkTypeId === id ? { ...l, text } : l)))
 
-  const write = async (items: { milkTypeId: number; qtyMl: number }[], done: string) => {
-    setSaving(true)
-    try {
-      await saveDay(stop.customer.id, date, items)
-      notify(done)
-      onSaved()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
-      setSaving(false)
-    }
-  }
+  const write = (items: { milkTypeId: number; qtyMl: number }[], done: string) =>
+    guard(async () => {
+      setSaving(true)
+      try {
+        await saveDay(stop.customer.id, date, items)
+        notify(done)
+        onSaved()
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e))
+        setSaving(false)
+      }
+    })
 
   const save = () => {
     const items = dayItems(lines)

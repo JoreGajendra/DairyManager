@@ -4,7 +4,7 @@ import { dateLabel, todayIso, tr } from '../../lib'
 import type { IsoDate, Pause } from '../../lib'
 import { addPause, deletePause, resumePause } from '../../db'
 import { C, font, space } from '../../ui/theme'
-import { Button, Card, DateChoice, ErrorNote, Label, Muted, Row, notify } from '../../ui/ui'
+import { Button, Card, DateChoice, ErrorNote, Label, Muted, Row, notify, useGuard } from '../../ui/ui'
 
 /**
  * Holidays: delivery stops from a day until the day it comes again (or until
@@ -16,20 +16,22 @@ export function PauseSection({ customerId, pauses, onChanged }: { customerId: nu
   const [until, setUntil] = useState<IsoDate | null>(null)
   const [openEnded, setOpenEnded] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { guard } = useGuard()
 
-  const run = async (action: () => Promise<void>, done: string) => {
-    setError(null)
-    try {
-      await action()
-      notify(done)
-      setMode('none')
-      onChanged()
-    } catch (e) {
-      const text = e instanceof Error ? e.message : String(e)
-      setError(text)
-      notify(text, 'error')
-    }
-  }
+  const run = (action: () => Promise<void>, done: string) =>
+    guard(async () => {
+      setError(null)
+      try {
+        await action()
+        notify(done)
+        setMode('none')
+        onChanged()
+      } catch (e) {
+        const text = e instanceof Error ? e.message : String(e)
+        setError(text)
+        notify(text, 'error')
+      }
+    })
 
   const open = (next: typeof mode, resumeDefault: IsoDate | null) => {
     setError(null)

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { DependencyList, ReactNode } from 'react'
 import { ActivityIndicator, Animated, BackHandler, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -337,6 +337,38 @@ export function Loading() {
 
 export function ErrorNote({ children }: { children: ReactNode }) {
   return <Text style={styles.error}>{children}</Text>
+}
+
+/** A screen that could not load: the reason and a retry button. */
+export function LoadFailed({ error, onRetry }: { error: string; onRetry: () => void }) {
+  return (
+    <View style={{ padding: space(5) }}>
+      <ErrorNote>{error}</ErrorNote>
+      <Button variant="ghost" onPress={onRetry}>{tr('Try again')}</Button>
+    </View>
+  )
+}
+
+/**
+ * Runs an async action at most once at a time. A second tap while the first is
+ * still running is ignored at once (a ref, so it holds even before a re-render);
+ * `busy` is for greying the button.
+ */
+export function useGuard() {
+  const running = useRef(false)
+  const [busy, setBusy] = useState(false)
+  const guard = useCallback(async (action: () => Promise<void>) => {
+    if (running.current) return
+    running.current = true
+    setBusy(true)
+    try {
+      await action()
+    } finally {
+      running.current = false
+      setBusy(false)
+    }
+  }, [])
+  return { busy, guard }
 }
 
 type Note = { text: string; tone: 'done' | 'error'; key: number }

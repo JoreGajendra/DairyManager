@@ -19,7 +19,7 @@ import type { IsoDate } from '../lib'
 import { bulkRateChange, loadCustomer, loadSetup } from '../db'
 import type { Setup } from '../db'
 import { C, faint, font, space } from '../ui/theme'
-import { Button, DateChoice, ErrorNote, Field, Icon, Label, Loading, Muted, notify } from '../ui/ui'
+import { Button, DateChoice, ErrorNote, Field, Icon, Label, Loading, Muted, notify, useGuard } from '../ui/ui'
 import { bulkPreviewCount } from './dues/duesLogic'
 import { Sheet } from './dues/Sheet'
 
@@ -33,6 +33,7 @@ export function BulkRateSheet({ onDone, onClose }: { onDone: () => void; onClose
   const [chosen, setChosen] = useState<Set<number>>(new Set())
   const [alsoDefault, setAlsoDefault] = useState(false)
   const [busy, setBusy] = useState(false)
+  const { guard } = useGuard()
   // Set once Review has counted the customers who buy the milk.
   const [count, setCount] = useState<number | null>(null)
 
@@ -79,7 +80,7 @@ export function BulkRateSheet({ onDone, onClose }: { onDone: () => void; onClose
     }
   }
 
-  const confirm = async () => {
+  const confirm = () => guard(async () => {
     if (!type || paise === null || !from) return
     setBusy(true)
     setError(null)
@@ -93,7 +94,7 @@ export function BulkRateSheet({ onDone, onClose }: { onDone: () => void; onClose
       notify(message, 'error')
       setBusy(false)
     }
-  }
+  })
 
   if (count !== null && type && paise !== null && from) {
     return (

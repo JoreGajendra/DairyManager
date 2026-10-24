@@ -4,7 +4,7 @@ import { inr, paiseFromText, rupeeText, tr } from '../../lib'
 import { addMilkType, renameMilkType, setMilkTypeActive, setMilkTypeDefaultRate } from '../../db'
 import type { MilkTypeRow } from '../../dataHelpers'
 import { C, font, muted, space } from '../../ui/theme'
-import { Body, Button, Card, ErrorNote, Field, Label, Muted, Row, notify } from '../../ui/ui'
+import { Body, Button, Card, ErrorNote, Field, Label, Muted, Row, notify, useGuard } from '../../ui/ui'
 
 /**
  * The milks sold. The default rate only seeds a new customer; changing it
@@ -15,6 +15,7 @@ export function MilkTypesSection({ types, onChanged }: { types: MilkTypeRow[]; o
   const [name, setName] = useState('')
   const [rate, setRate] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const { busy, guard } = useGuard()
 
   const open = (id: number | 'new', t?: MilkTypeRow) => {
     setError(null)
@@ -23,19 +24,20 @@ export function MilkTypesSection({ types, onChanged }: { types: MilkTypeRow[]; o
     setEditing(id)
   }
 
-  const run = async (action: () => Promise<void>, done: string) => {
-    setError(null)
-    try {
-      await action()
-      notify(done)
-      setEditing(null)
-      onChanged()
-    } catch (e) {
-      const text = e instanceof Error ? e.message : String(e)
-      setError(text)
-      notify(text, 'error')
-    }
-  }
+  const run = (action: () => Promise<void>, done: string) =>
+    guard(async () => {
+      setError(null)
+      try {
+        await action()
+        notify(done)
+        setEditing(null)
+        onChanged()
+      } catch (e) {
+        const text = e instanceof Error ? e.message : String(e)
+        setError(text)
+        notify(text, 'error')
+      }
+    })
 
   const save = () => {
     const paise = paiseFromText(rate)
@@ -57,7 +59,7 @@ export function MilkTypesSection({ types, onChanged }: { types: MilkTypeRow[]; o
       {error ? <ErrorNote>{error}</ErrorNote> : null}
       <View style={{ flexDirection: 'row', gap: space(3) }}>
         <Button variant="quiet" onPress={() => setEditing(null)} style={{ flex: 1 }}>{tr('Cancel')}</Button>
-        <Button onPress={save} style={{ flex: 1 }}>{tr('Save')}</Button>
+        <Button onPress={save} disabled={busy} style={{ flex: 1 }}>{tr('Save')}</Button>
       </View>
     </View>
   )

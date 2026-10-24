@@ -6,7 +6,7 @@ import type { LedgerMonth, Payment } from '../../lib'
 import { deletePayment, loadCustomer } from '../../db'
 import type { CustomerData } from '../../db'
 import { C, font, muted, space } from '../../ui/theme'
-import { Button, Card, ErrorNote, Header, Label, Loading, Muted, Row, notify, useBack } from '../../ui/ui'
+import { Button, Card, ErrorNote, Header, Label, LoadFailed, Loading, Muted, Row, notify, useBack, useGuard } from '../../ui/ui'
 import { RecordPaymentSheet } from '../RecordPaymentSheet'
 import { billedMonths, inLanguage, reminderLines } from './duesLogic'
 import { sendWhatsApp } from './share'
@@ -17,6 +17,7 @@ export function CustomerLedger({ customerId, onBack, onChanged }: { customerId: 
   const [data, setData] = useState<CustomerData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [paying, setPaying] = useState(false)
+  const { guard } = useGuard()
 
   const reload = () =>
     loadCustomer(customerId)
@@ -36,7 +37,7 @@ export function CustomerLedger({ customerId, onBack, onChanged }: { customerId: 
     return (
       <View style={{ flex: 1, padding: space(5) }}>
         <Header title={tr('Dues')} onBack={onBack} />
-        {error ? <ErrorNote>{error}</ErrorNote> : <Loading />}
+        {error ? <LoadFailed error={error} onRetry={() => { setError(null); void reload() }} /> : <Loading />}
       </View>
     )
   }
@@ -56,16 +57,18 @@ export function CustomerLedger({ customerId, onBack, onChanged }: { customerId: 
         text: tr('Delete'),
         style: 'destructive',
         onPress: () =>
-          deletePayment(p.id)
-            .then(async () => {
-              onChanged()
-              await reload()
-              notify(tr('Payment deleted'))
-            })
-            .catch((e: unknown) => {
-              setError(errText(e))
-              notify(errText(e), 'error')
-            }),
+          void guard(() =>
+            deletePayment(p.id)
+              .then(async () => {
+                onChanged()
+                await reload()
+                notify(tr('Payment deleted'))
+              })
+              .catch((e: unknown) => {
+                setError(errText(e))
+                notify(errText(e), 'error')
+              }),
+          ),
       },
     ])
 

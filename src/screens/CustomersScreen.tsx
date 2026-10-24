@@ -4,7 +4,7 @@ import { tr } from '../lib'
 import { loadSetup } from '../db'
 import type { Setup } from '../db'
 import { C, faint, font, muted, radius, space } from '../ui/theme'
-import { Body, Button, Card, ErrorNote, Loading, Muted, Title, styles } from '../ui/ui'
+import { Body, Button, Card, ErrorNote, LoadFailed, Loading, Muted, Title, styles } from '../ui/ui'
 import { CustomerDetail } from './customers/CustomerDetail'
 import { CustomerForm } from './customers/CustomerForm'
 import { filterCustomers } from './customers/customerView'
@@ -39,7 +39,7 @@ export function CustomersScreen() {
   }
   if (view.page === 'detail') return <CustomerDetail customerId={view.id} onBack={() => setView({ page: 'list' })} />
 
-  if (!setup) return error ? <ErrorNote>{error}</ErrorNote> : <Loading />
+  if (!setup) return error ? <LoadFailed error={error} onRetry={() => { setError(null); void reload() }} /> : <Loading />
 
   const shown = filterCustomers(setup.customers, query)
   const active = shown.filter((c) => c.active)

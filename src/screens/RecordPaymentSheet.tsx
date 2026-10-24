@@ -23,7 +23,7 @@ import { receiptHtml } from '../billHtml'
 import { addPayment, applyCredit, loadCustomer } from '../db'
 import type { CustomerData } from '../db'
 import { C, faint, font, space } from '../ui/theme'
-import { Button, Card, DateChoice, ErrorNote, Field, Icon, Label, Loading, Muted, notify, styles } from '../ui/ui'
+import { Button, Card, DateChoice, ErrorNote, Field, Icon, Label, Loading, Muted, notify, styles, useGuard } from '../ui/ui'
 import { creditOffer, inLanguage, payableMonths, planPayment, suggestedPaise } from './dues/duesLogic'
 import { Sheet } from './dues/Sheet'
 import { sendWhatsApp, sharePdf } from './dues/share'
@@ -40,6 +40,7 @@ export function RecordPaymentSheet({ customerId, onDone, onClose }: { customerId
   const [savedId, setSavedId] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
   const changed = useRef(false)
+  const { guard } = useGuard()
 
   const reload = () =>
     loadCustomer(customerId)
@@ -82,7 +83,7 @@ export function RecordPaymentSheet({ customerId, onDone, onClose }: { customerId
     setManual(Object.fromEntries(selected.map((m) => [m.month, rupeeText(auto.find((a) => a.month === m.month)?.amountPaise ?? 0)])))
   }
 
-  const save = async () => {
+  const save = () => guard(async () => {
     if (!paise) return setError(tr('Enter the amount paid, like 2000.'))
     if (!date) return setError(tr('Pick the date it was paid.'))
     if (plan.error) return setError(plan.error)
@@ -101,9 +102,9 @@ export function RecordPaymentSheet({ customerId, onDone, onClose }: { customerId
     } finally {
       setSaving(false)
     }
-  }
+  })
 
-  const useCredit = async () => {
+  const useCredit = () => guard(async () => {
     if (!offer) return
     setSaving(true)
     setError(null)
@@ -117,7 +118,7 @@ export function RecordPaymentSheet({ customerId, onDone, onClose }: { customerId
     } finally {
       setSaving(false)
     }
-  }
+  })
 
   const saved: Payment | undefined = savedId === null ? undefined : data.payments.find((p) => p.id === savedId)
   if (saved) {

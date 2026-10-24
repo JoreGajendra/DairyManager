@@ -5,7 +5,7 @@ import type { Lang } from '../lib'
 import { loadSetup, saveLanguage, saveSettings } from '../db'
 import type { Setup } from '../db'
 import { C, font, radius, space } from '../ui/theme'
-import { Button, Card, ErrorNote, Field, Label, Loading, Title, notify } from '../ui/ui'
+import { Button, Card, ErrorNote, Field, Label, LoadFailed, Loading, useGuard, Title, notify } from '../ui/ui'
 import { BulkRateSheet } from './BulkRateSheet'
 import { BackupSection } from './setup/BackupSection'
 import { MilkTypesSection } from './setup/MilkTypesSection'
@@ -18,6 +18,7 @@ export function SetupScreen({ onLanguageChange }: { onLanguageChange?: (lang: La
   const [phone, setPhone] = useState('')
   const [lang, setLangState] = useState<Lang>(getLang())
   const [error, setError] = useState<string | null>(null)
+  const saveGuard = useGuard()
 
   const reload = useCallback(async () => {
     try {
@@ -60,7 +61,7 @@ export function SetupScreen({ onLanguageChange }: { onLanguageChange?: (lang: La
     }
   }
 
-  if (!setup) return error ? <ErrorNote>{error}</ErrorNote> : <Loading />
+  if (!setup) return error ? <LoadFailed error={error} onRetry={() => { setError(null); void reload() }} /> : <Loading />
 
   return (
     <ScrollView contentContainerStyle={{ padding: space(5), paddingTop: space(2), paddingBottom: space(10) }} keyboardShouldPersistTaps="handled">
@@ -73,7 +74,7 @@ export function SetupScreen({ onLanguageChange }: { onLanguageChange?: (lang: La
         <Label>{tr('Your business')}</Label>
         <Field label={tr('Business name')} value={name} onChangeText={setName} hint={tr('Shown on bills and messages.')} />
         <Field label={tr('Phone')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={15} />
-        <Button onPress={saveBusiness}>{tr('Save')}</Button>
+        <Button disabled={saveGuard.busy} onPress={() => void saveGuard.guard(saveBusiness)}>{tr('Save')}</Button>
       </Card>
 
       <View style={{ height: space(4) }} />
