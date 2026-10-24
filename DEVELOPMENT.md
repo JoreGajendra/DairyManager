@@ -44,7 +44,7 @@ Copied from `E:\DairyManagementApp\code` (copied 2026-10-24, Phase 1):
 
 - `shared/src` to `src/lib`: `billing`, `ledger`, `money`, `quantity`, `dates`, `i18n`, `mr`, `templates` unchanged; `whatsappNumber`/`whatsappUrl` from `messages` into `whatsapp.ts` (buyer-voiced builders not copied). `mr.ts` still holds household-app entries; prune in later phases
 - `shared/test` to `test/`: billing, i18n, templates, pause, sheet (i18n adapted: no message-builder test, no leftover-key test, scans this repo); wa.me cases in `whatsapp.test.ts`
-- `mobile/src` to `src/ui`: `theme.ts`, `ui.tsx` (import paths only). `billHtml.ts` NOT copied yet (it imports the household `db` Settings type); Phase 5 copies and adapts it (do not fork logic)
+- `mobile/src` to `src/ui`: `theme.ts`, `ui.tsx` (import paths only). `billHtml.ts` copied to `src/billHtml.ts` 2026-10-24 (Phase 5): billing/layout logic unchanged; header is business to customer via a local `BillHeader` type (no db dependency); builders set the bill's language and restore it
 - `mobile/assets` (icons, fonts) copied as is
 
 There is no automatic sync. A fix made in one project must be applied by hand to the other if it applies there.

@@ -387,4 +387,13 @@ export const MR: Record<string, string> = {
   '{name}: {qty}': '{name}: {qty}',
   '{name}: {qty} (usual {usual})': '{name}: {qty} (नेहमी {usual})',
   '{qty} in all': 'एकूण {qty}',
+  'Hello {name},': 'नमस्कार {name},',
+  '*Payment received*': '*पैसे मिळाले*',
+  'Thank you!': 'धन्यवाद!',
+  '*Milk bill reminder*': '*दुधाच्या बिलाची आठवण*',
+  'Please pay when you can. Thank you!': 'कृपया सोयीनुसार भरावे. धन्यवाद!',
+  'From': 'कडून',
+  'To': 'प्रति',
+  'Customer': 'ग्राहक',
+  'Phone': 'फोन',
 };
