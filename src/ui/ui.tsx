@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { DependencyList, ReactNode } from 'react'
 import { ActivityIndicator, Animated, BackHandler, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Svg, { Path, Rect } from 'react-native-svg'
+import Svg, { Circle, Defs, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg'
 import { addMonths, dateLabel, getLang, isIsoDate, monthLabel, monthOf, todayIso, tomorrowIso, tr } from '../lib'
 import type { IsoDate, IsoMonth } from '../lib'
 import { C, faint, font, muted, radius, space } from './theme'
@@ -57,16 +57,29 @@ export function Icon({ name, size = 22, color = C.ink }: { name: IconName; size?
 }
 
 /**
- * A capped milk bottle on a blue tile, with a butter band; `word` adds the two-tone
- * wordmark. The app icon in `assets/` is this same drawing.
+ * The app icon: a capped milk bottle with a drop on its label and a butter
+ * "delivered" tick, on a blue-to-navy tile; `word` adds the two-tone wordmark.
+ * `assets/` holds the same drawing (generated from these shapes at 1024 px).
  */
 export function Logo({ size = 30, word = false }: { size?: number; word?: boolean }) {
   const mark = (
-    <Svg width={size} height={size} viewBox="0 0 48 48">
-      <Rect width={48} height={48} rx={15} fill={C.blue} />
-      <Path d="M19 11h10v3l4 6v17a3 3 0 0 1-3 3H18a3 3 0 0 1-3-3V20l4-6z" fill={C.white} />
-      <Path d="M15 24h18v5H15z" fill={C.butter} />
-      <Rect x={18} y={7.5} width={12} height={4} rx={1.2} fill={C.navy} />
+    <Svg width={size} height={size} viewBox="0 0 1024 1024">
+      <Defs>
+        <LinearGradient id="logoTile" x1="0" y1="0" x2="1" y2="1">
+          <Stop offset="0" stopColor={C.blue} />
+          <Stop offset="1" stopColor={C.navy} />
+        </LinearGradient>
+      </Defs>
+      <Rect width={1024} height={1024} rx={300} fill="url(#logoTile)" />
+      <G transform="matrix(1.15 0 0 1.15 -178 -114.75)">
+        <Path d="M452,285 H572 V345 L652,445 V770 a40,40 0 0 1 -40,40 H412 a40,40 0 0 1 -40,-40 V445 L452,345 Z" fill={C.white} />
+        <Rect x={436} y={232} width={152} height={62} rx={16} fill={C.butter} />
+        <Rect x={372} y={540} width={280} height={96} fill={C.navy} />
+        <Path d="M512,560 c0,0 -26,30 -26,46 a26,26 0 0 0 52,0 c0,-16 -26,-46 -26,-46z" fill={C.white} />
+        <Circle cx={690} cy={720} r={138} fill="#123459" />
+        <Circle cx={690} cy={720} r={115} fill={C.butter} />
+        <Path d="M638,722 l38,38 l76,-82" fill="none" stroke={C.navy} strokeWidth={34} strokeLinecap="round" strokeLinejoin="round" />
+      </G>
     </Svg>
   )
   if (!word) return mark
@@ -454,6 +467,8 @@ export const styles = StyleSheet.create({
     borderRadius: radius.card,
     padding: space(4),
     marginBottom: space(3.5),
+    elevation: 1,
+    shadowColor: C.navy,
   },
   title: { fontFamily: font.display, fontSize: 22, color: C.navy },
   label: { fontFamily: font.body, fontSize: 11, letterSpacing: 0.4, textTransform: 'uppercase', color: muted },
